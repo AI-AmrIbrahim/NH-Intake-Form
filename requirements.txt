@@ -1,0 +1,7 @@
+streamlit
+fastapi
+uvicorn
+langgraph
+psycopg2-binary
+chromadb
+requests

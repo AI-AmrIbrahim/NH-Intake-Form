@@ -5,3 +5,5 @@ langgraph
 psycopg2-binary
 chromadb
 requests
+supabase
+python-dotenv

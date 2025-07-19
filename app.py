@@ -362,7 +362,7 @@ def main():
         additional_info = st.text_area(
             "Is there anything else you would like to tell us?",
             value=user_profile.get("additional_info", ""),
-            placeholder="e.g., Previous sports injuries, aches, pains, etc."
+            placeholder="e.g., Previous sports, injuries, aches, pains, etc."
         )
 
     # --- Submission ---

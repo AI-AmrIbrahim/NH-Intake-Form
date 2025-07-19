@@ -8,6 +8,16 @@ import base64
 def clear_form():
     st.session_state.user_profile = {}
 
+# --- Helper Functions ---
+def get_base64_of_bin_file(bin_file):
+    """Reads a binary file and returns its base64 encoded string."""
+    try:
+        with open(bin_file, 'rb') as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except FileNotFoundError:
+        return None
+
 # --- Profile Management Functions ---
 def load_profiles():
     """Loads user profiles from a JSON file."""
@@ -63,78 +73,86 @@ def main():
     )
 
     # --- Set Background Image ---
-    def get_base64_of_bin_file(bin_file):
-        with open(bin_file, 'rb') as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
-
     background_image_b64 = get_base64_of_bin_file('background.png')
-
-    page_bg_img = f"""
-    <style>
-    .stApp {{
-        background-image: url("data:image/png;base64,{background_image_b64}");
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }}
-    </style>
-    """
-    st.markdown(page_bg_img, unsafe_allow_html=True)
+    if background_image_b64:
+        page_bg_img = f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{background_image_b64}");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }}
+        </style>
+        """
+        st.markdown(page_bg_img, unsafe_allow_html=True)
 
 
     # --- Custom CSS for a more appealing design ---
-    st.markdown(f"""
+    st.markdown("""
     <style>
-        /* Background */
-        .stApp {{
+        /* Background fallback */
+        .stApp {
             background-color: #000000;
-        }}
+        }
 
         /* Title and Headers */
-        h1 {{
-            color: #FFFFFF; /* White */
+        .form-title-container h1 {
+            color: #222f62;
             text-align: center;
             font-weight: bold;
-        }}
-        h2, h3 {{
-            color: #222f62; /* Dark Blue */
-        }}
+            font-size: 2.5em;
+        }
+        h2, h3 {
+            color: #222f62;
+        }
 
-        /* Main text color for readability */
-        p, label, .st-emotion-cache-16txtl3, .st-emotion-cache-10trblm, div[data-baseweb="radio"] > label {{
-            color: #212529 !important; /* Dark Gray */
-        }}
+        /* Main text color */
+        p, label, .st-emotion-cache-16txtl3, .st-emotion-cache-10trblm, div[data-baseweb="radio"] > label {
+            color: #212529 !important;
+        }
+        .form-title-container p {
+            text-align: center;
+        }
 
         /* Button Styling */
-        .stButton>button {{
-            border: 2px solid #222f62; /* Dark Blue */
-            background-color: #5db2e1; /* Light Blue */
-            color: #FFFFFF; /* White */
+        .stButton>button {
+            border: 2px solid #222f62;
+            background-color: #5db2e1;
+            color: #FFFFFF;
             border-radius: 10px;
             font-weight: bold;
-        }}
-        .stButton>button:hover {{
-            background-color: #222f62; /* Dark Blue */
-            color: #FFFFFF; /* White */
-        }}
+        }
+        .stButton>button:hover {
+            background-color: #222f62;
+            color: #FFFFFF;
+        }
 
         /* Input widgets */
-        .stTextInput>div>div>input, .stTextArea>div>div>textarea {{
-            background-color: #FFFFFF; /* White */
-            border: 1px solid #DDDDDD; /* Light Gray */
+        .stTextInput>div>div>input, .stTextArea>div>div>textarea {
+            background-color: #FFFFFF;
+            border: 1px solid #DDDDDD;
             border-radius: 5px;
-            color: #212529; /* Dark Gray */
-        }}
+            color: #212529;
+        }
 
-        /* Styling for the containers */
-        div[data-testid="stVerticalBlockBorderWrapper"] {{
-            background-color: #FFFFFF; /* White */
-            border: 1px solid #DDDDDD; /* Light Gray */
+        /* Container Styling */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            background-color: #FFFFFF;
+            border: 1px solid #DDDDDD;
             border-radius: 10px;
             padding: 25px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }}
+        }
+
+        /* Custom container for title/description */
+        .form-title-container {
+            background-color: #FFFFFF;
+            border: 1px solid #DDDDDD;
+            border-radius: 10px;
+            padding: 15px 25px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -144,8 +162,13 @@ def main():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             st.image("NH_logo.png", width=200)
-    st.title("NutritionHouse AI Recommender")
-    st.markdown("<p style='text-align: center;'>Discover the perfect vitamins for you. Answer a few questions to get started!</p>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="form-title-container">
+        <h1>NutritionHouse AI Recommender</h1>
+        <p>Discover the perfect vitamins for you. Answer a few questions to get started!</p>
+    </div>
+    """, unsafe_allow_html=True)
     st.write("---")
 
     # --- User Status Selection ---
@@ -183,10 +206,11 @@ def main():
         user_profile = st.session_state.user_profile
     else:
         user_profile = {
-            "name": "", "age": "", "sex": "Male", "height_m": "", "weight_kg": "",
+            "first_name": "", "last_name": "", "email": "", "age": "", "sex": "Male", "height_m": "", "weight_kg": "",
+            "physical_activity": "3-4 days", "energy_level": 3, "diet": "I don't follow a specific diet",
             "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
-            "current_medications": [], "allergies": [], "health_goals": [],
-            "interested_supplements": []
+            "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
+            "interested_supplements": [], "additional_info": ""
         }
 
     # --- Form Questions ---
@@ -195,11 +219,21 @@ def main():
 
         if user_status == "New User":
             phone_number_input = st.text_input("Your Phone Number (to save and retrieve your profile)")
-            name_input = st.text_input("Your Name", value=user_profile.get("name", ""))
+            col1, col2 = st.columns(2)
+            with col1:
+                first_name_input = st.text_input("First Name", value=user_profile.get("first_name", ""))
+            with col2:
+                last_name_input = st.text_input("Last Name", value=user_profile.get("last_name", ""))
+            email_input = st.text_input("Your Email", value=user_profile.get("email", ""))
         else: # Returning User
             phone_number_input = user_profile.get("phone_number", "") # Use loaded profile data
             st.text_input("Phone Number", value=phone_number_input, disabled=True)
-            name_input = st.text_input("Your Name", value=user_profile.get("name", ""), disabled=True)
+            col1, col2 = st.columns(2)
+            with col1:
+                first_name_input = st.text_input("First Name", value=user_profile.get("first_name", ""), disabled=True)
+            with col2:
+                last_name_input = st.text_input("Last Name", value=user_profile.get("last_name", ""), disabled=True)
+            email_input = st.text_input("Your Email", value=user_profile.get("email", ""), disabled=True)
 
         st.write("Date of Birth")
         today = datetime.date.today()
@@ -232,6 +266,27 @@ def main():
         sex = st.radio("Biological Sex", sex_options, index=sex_options.index(user_profile.get("sex", "Male")))
 
     with st.container(border=True):
+        st.header("🏃 Lifestyle")
+        activity_options = ["0-1 days", "1-2 days", "3-4 days", "5-7 days"]
+        physical_activity = st.selectbox(
+            "How many days per week do you engage in physical activity (workout, sport, walking, etc.)?",
+            activity_options,
+            index=activity_options.index(user_profile.get("physical_activity", "3-4 days"))
+        )
+        energy_level = st.slider(
+            "How would you rate your energy on a typical day?",
+            min_value=1, max_value=5, value=user_profile.get("energy_level", 3),
+            format="%d (1=Very Low, 5=Very High)"
+        )
+        diet_options = ["Clean/Whole food", "High Protein", "Plant-based", "Low carb/keto", "Fast-food often", "I don't follow a specific diet"]
+        diet = st.selectbox(
+            "Which of the following best describes your diet?",
+            diet_options,
+            index=diet_options.index(user_profile.get("diet", "I don't follow a specific diet"))
+        )
+
+
+    with st.container(border=True):
         st.header("⚕️ Medical History")
         pregnant_or_breastfeeding = "Not Applicable"
         if sex == 'Female':
@@ -256,7 +311,7 @@ def main():
         st.header("💊 Medications & Allergies")
         current_medications = st.text_area(
             "List any current medications (comma-separated).",
-            value=", ".join(user_profile.get("current_medications", [])),
+            value=", ".join(user_profile.get("current__medications", [])),
             placeholder="e.g., Lisinopril, Metformin, Ibuprofen"
         )
         allergies = st.text_area(
@@ -270,17 +325,44 @@ def main():
         health_goals_options = [
             "Improve Energy", "Boost Immunity", "Support Joint Health",
             "Enhance Sleep Quality", "Improve Digestive Health", "Support Heart Health",
-            "Strengthen Bones", "Improve Mood & Focus"
+            "Strengthen Bones", "Improve Mood & Focus", "Other"
         ]
+        
+        # Limit multiselect to 2 options
+        if 'health_goals' not in st.session_state:
+            st.session_state.health_goals = user_profile.get("health_goals", [])
+
+        def limit_multiselect():
+            if len(st.session_state.health_goals) > 2:
+                st.session_state.health_goals = st.session_state.health_goals[:2]
+
         health_goals = st.multiselect(
-            "What are your primary health goals?",
+            "What are your primary health goals? (Select up to 2)",
             health_goals_options,
-            default=user_profile.get("health_goals", [])
+            key="health_goals",
+            on_change=limit_multiselect,
+            default=st.session_state.health_goals
         )
+
+        other_health_goal = ""
+        if "Other" in health_goals:
+            other_health_goal = st.text_input(
+                "Please specify your other health goal:",
+                value=user_profile.get("other_health_goal", "")
+            )
+
         interested_supplements = st.text_area(
             "Any specific vitamins you're interested in (comma-separated)?",
             value=", ".join(user_profile.get("interested_supplements", [])),
             placeholder="e.g., Vitamin D, Probiotics, Turmeric"
+        )
+
+    with st.container(border=True):
+        st.header("📝 Additional Information")
+        additional_info = st.text_area(
+            "Is there anything else you would like to tell us?",
+            value=user_profile.get("additional_info", ""),
+            placeholder="e.g., Previous sports injuries, aches, pains, etc."
         )
 
     # --- Submission ---
@@ -298,22 +380,29 @@ def main():
             st.error("Please enter a valid age (a number between 1 and 120).")
         else:
             user_data = {
-                "name": name_input,
+                "first_name": first_name_input,
+                "last_name": last_name_input,
+                "email": email_input,
                 "age": int(age_input),
                 "sex": sex,
+                "physical_activity": physical_activity,
+                "energy_level": energy_level,
+                "diet": diet,
                 "pregnant_or_breastfeeding": pregnant_or_breastfeeding,
                 "medical_conditions": [c.strip() for c in medical_conditions.split(',') if c.strip()],
                 "current_medications": [m.strip() for m in current_medications.split(',') if m.strip()],
                 "allergies": [a.strip() for a in allergies.split(',') if a.strip()],
                 "health_goals": health_goals,
-                "interested_supplements": [s.strip() for s in interested_supplements.split(',') if s.strip()]
+                "other_health_goal": other_health_goal,
+                "interested_supplements": [s.strip() for s in interested_supplements.split(',') if s.strip()],
+                "additional_info": additional_info
             }
             
             # Save the profile using phone number as the key
             profiles[phone_number_input] = user_data
             save_profiles(profiles)
 
-            st.success(f"Profile for {name_input} saved! We're analyzing your profile...")
+            st.success(f"Profile for {first_name_input} {last_name_input} saved! We're analyzing your profile...")
             with st.spinner("Our AI engine is generating your personalized recommendations..."):
                 recommendations = get_recommendations(user_data)
                 st.markdown(recommendations)

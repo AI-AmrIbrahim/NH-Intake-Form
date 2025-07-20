@@ -68,7 +68,7 @@ def main():
     # --- Page Configuration ---
     st.set_page_config(
         page_title="NutritionHouse AI",
-        page_icon="NH_logo.png",
+        page_icon="NH_favicon.png",
         layout="centered"
     )
 
@@ -159,13 +159,11 @@ def main():
 
     # --- Header ---
     with st.container(border=True):
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.image("NH_logo.png", width=200)
+        st.image("NH_logo.png", use_container_width=True)
 
     st.markdown("""
     <div class="form-title-container">
-        <h1>NutritionHouse AI Recommender</h1>
+        <h1>Nutrition House AI Recommender</h1>
         <p>Discover the perfect vitamins for you. Answer a few questions to get started!</p>
     </div>
     """, unsafe_allow_html=True)
@@ -174,17 +172,17 @@ def main():
     # --- User Status Selection ---
     with st.container(border=True):
         st.radio(
-            "Are you a new or returning user?",
-            ("New User", "Returning User"),
+            "Do you have a profile with Nutrition House?",
+            ("Yes, I have filled out the intake form before", "No, I have not filled out the intake form before"),
             key='user_status',
             on_change=clear_form
         )
-    user_status = st.session_state.get('user_status', "New User")
+    user_status = st.session_state.get('user_status', "No, I have not filled out the intake form before")
 
     phone_number_input = ""
     user_profile = {}
 
-    if user_status == "Returning User":
+    if user_status == "Yes, I have filled out the intake form before":
         phone_number_input = st.text_input("Enter your phone number to load your profile:")
         if st.button("Load Profile"):
             profile = load_profile_from_db(phone_number_input)
@@ -207,7 +205,7 @@ def main():
     else:
         user_profile = {
             "first_name": "", "last_name": "", "email": "", "age": "", "sex": "Male", "height_m": "", "weight_kg": "",
-            "physical_activity": "3-4 days", "energy_level": 3, "diet": "I don't follow a specific diet",
+            "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
             "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
             "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
             "interested_supplements": [], "additional_info": ""
@@ -217,7 +215,7 @@ def main():
     with st.container(border=True):
         st.header("👤 Personal Information")
 
-        if user_status == "New User":
+        if user_status == "No, I have not filled out the intake form before":
             phone_number_input = st.text_input("Your Phone Number (to save and retrieve your profile)")
             col1, col2 = st.columns(2)
             with col1:
@@ -273,16 +271,31 @@ def main():
             activity_options,
             index=activity_options.index(user_profile.get("physical_activity", "3-4 days"))
         )
-        energy_level = st.slider(
+        energy_level = st.select_slider(
             "How would you rate your energy on a typical day?",
-            min_value=1, max_value=5, value=user_profile.get("energy_level", 3),
-            format="%d (1=Very Low, 5=Very High)"
+            options=["Very Low", "Low", "Neutral", "High", "Very High"],
+            value=user_profile.get("energy_level", "Neutral")
         )
         diet_options = ["Clean/Whole food", "High Protein", "Plant-based", "Low carb/keto", "Fast-food often", "I don't follow a specific diet"]
         diet = st.selectbox(
             "Which of the following best describes your diet?",
             diet_options,
             index=diet_options.index(user_profile.get("diet", "I don't follow a specific diet"))
+        )
+        meals_per_day = st.selectbox(
+            "How many meals do you typically eat per day?",
+            ["1", "2", "3", "More than 3"],
+            index=0
+        )
+        sleep_quality = st.select_slider(
+            "How would you rate your sleep quality?",
+            options=["Poor", "Fair", "Good", "Excellent"],
+            value=user_profile.get("sleep_quality", "Good")
+        )
+        stress_level = st.select_slider(
+            "How would you rate your average stress level?",
+            options=["Low", "Moderate", "High"],
+            value=user_profile.get("stress_level", "Moderate")
         )
 
 
@@ -309,10 +322,15 @@ def main():
 
     with st.container(border=True):
         st.header("💊 Medications & Allergies")
-        current_medications = st.text_area(
-            "List any current medications (comma-separated).",
-            value=", ".join(user_profile.get("current__medications", [])),
-            placeholder="e.g., Lisinopril, Metformin, Ibuprofen"
+        medications = st.text_area(
+            "List any OTC, Over The Counter, or prescribed medications you are currently taking (comma-separated).",
+            value=", ".join(user_profile.get("medications", [])),
+            placeholder="e.g., Ibuprofen, Aspirin, Atorvastatin, Amlodipine, Metformin"
+        )
+        natural_supplements = st.text_area(
+            "List any natural supplements you are currently taking (comma-separated).",
+            value=", ".join(user_profile.get("natural_supplements", [])),
+            placeholder="e.g., Melatonin, St. John's Wort, Fish Oil"
         )
         allergies = st.text_area(
             "List any known allergies (comma-separated).",
@@ -340,8 +358,7 @@ def main():
             "What are your primary health goals? (Select up to 2)",
             health_goals_options,
             key="health_goals",
-            on_change=limit_multiselect,
-            default=st.session_state.health_goals
+            on_change=limit_multiselect
         )
 
         other_health_goal = ""
@@ -362,7 +379,7 @@ def main():
         additional_info = st.text_area(
             "Is there anything else you would like to tell us?",
             value=user_profile.get("additional_info", ""),
-            placeholder="e.g., Previous sports, injuries, aches, pains, etc."
+            placeholder="e.g., Previous sports, injuries, aches, pains, depression, anxiety, etc."
         )
 
     # --- Submission ---

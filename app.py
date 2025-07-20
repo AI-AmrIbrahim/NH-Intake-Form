@@ -164,7 +164,7 @@ def main():
     st.markdown("""
     <div class="form-title-container">
         <h1>Nutrition House AI Recommender</h1>
-        <p>Discover the perfect vitamins for you. Answer a few questions to get started!</p>
+        <p>This AI-powered tool is designed to provide personalized vitamin and supplement recommendations based on your individual needs. Please fill out the form below to get started.</p>
     </div>
     """, unsafe_allow_html=True)
     st.write("---")
@@ -179,26 +179,27 @@ def main():
         )
     user_status = st.session_state.get('user_status', "No, I have not filled out the intake form before")
 
-    phone_number_input = ""
+    email_input = ""
     user_profile = {}
 
     if user_status == "Yes, I have filled out the intake form before":
-        phone_number_input = st.text_input("Enter your phone number to load your profile:")
-        if st.button("Load Profile"):
-            profile = load_profile_from_db(phone_number_input)
-            if profile:
-                # Convert metric height/weight from DB to imperial for display
-                if profile.get("height_m"):
-                    total_inches = profile["height_m"] * 39.3701
-                    profile["height_ft"] = int(total_inches // 12)
-                    profile["height_in"] = int(total_inches % 12)
-                if profile.get("weight_kg"):
-                    profile["weight_lbs"] = round(profile["weight_kg"] * 2.20462, 2)
+        with st.container(border=True):
+            email_input = st.text_input("Enter your email to load your profile:")
+            if st.button("Load Profile"):
+                profile = load_profile_from_db(email_input)
+                if profile:
+                    # Convert metric height/weight from DB to imperial for display
+                    if profile.get("height_m"):
+                        total_inches = profile["height_m"] * 39.3701
+                        profile["height_ft"] = int(total_inches // 12)
+                        profile["height_in"] = int(total_inches % 12)
+                    if profile.get("weight_kg"):
+                        profile["weight_lbs"] = round(profile["weight_kg"] * 2.20462, 2)
 
-                st.session_state.user_profile = profile
-                st.success("Profile loaded successfully!")
-            else:
-                st.error("Profile not found. Please check the phone number or create a new profile.")
+                    st.session_state.user_profile = profile
+                    st.success("Profile loaded successfully!")
+                else:
+                    st.error("Profile not found. Please check the email or create a new profile.")
 
     if 'user_profile' in st.session_state:
         user_profile = st.session_state.user_profile
@@ -267,7 +268,7 @@ def main():
         st.header("🏃 Lifestyle")
         activity_options = ["0-1 days", "1-2 days", "3-4 days", "5-7 days"]
         physical_activity = st.selectbox(
-            "How many days per week do you engage in physical activity (workout, sport, walking, etc.)?",
+            "How many days per week do you engage in physical activity (e.g., workout, sport, walking)?",
             activity_options,
             index=activity_options.index(user_profile.get("physical_activity", "3-4 days"))
         )
@@ -278,7 +279,7 @@ def main():
         )
         diet_options = ["Clean/Whole food", "High Protein", "Plant-based", "Low carb/keto", "Fast-food often", "I don't follow a specific diet"]
         diet = st.selectbox(
-            "Which of the following best describes your diet?",
+            "Which of the following best describes your typical diet?",
             diet_options,
             index=diet_options.index(user_profile.get("diet", "I don't follow a specific diet"))
         )
@@ -288,12 +289,12 @@ def main():
             index=0
         )
         sleep_quality = st.select_slider(
-            "How would you rate your sleep quality?",
+            "How would you rate your overall sleep quality?",
             options=["Poor", "Fair", "Good", "Excellent"],
             value=user_profile.get("sleep_quality", "Good")
         )
         stress_level = st.select_slider(
-            "How would you rate your average stress level?",
+            "How would you rate your average daily stress level?",
             options=["Low", "Moderate", "High"],
             value=user_profile.get("stress_level", "Moderate")
         )
@@ -310,32 +311,32 @@ def main():
                 stored_pob = "No"
             pob_index = pob_options.index(stored_pob)
             pregnant_or_breastfeeding = st.radio(
-                "Are you pregnant or breastfeeding?",
+                "Are you currently pregnant or breastfeeding?",
                 pob_options,
                 index=pob_index
             )
         medical_conditions = st.text_area(
-            "List any pre-existing medical conditions (comma-separated).",
+            "Please list any pre-existing medical conditions.",
             value=", ".join(user_profile.get("medical_conditions", [])),
-            placeholder="e.g., High blood pressure, Asthma, Diabetes"
+            placeholder="e.g., High blood pressure, Asthma, Diabetes. Please separate each condition with a comma."
         )
 
     with st.container(border=True):
         st.header("💊 Medications & Allergies")
         medications = st.text_area(
-            "List any OTC, Over The Counter, or prescribed medications you are currently taking (comma-separated).",
+            "Please list any Over-the-Counter (OTC) or prescribed medications you are currently taking.",
             value=", ".join(user_profile.get("medications", [])),
-            placeholder="e.g., Ibuprofen, Aspirin, Atorvastatin, Amlodipine, Metformin"
+            placeholder="e.g., Ibuprofen, Aspirin, Atorvastatin, Amlodipine, Metformin. Please separate each with a comma."
         )
         natural_supplements = st.text_area(
-            "List any natural supplements you are currently taking (comma-separated).",
+            "Please list any natural supplements you are currently taking.",
             value=", ".join(user_profile.get("natural_supplements", [])),
-            placeholder="e.g., Melatonin, St. John's Wort, Fish Oil"
+            placeholder="e.g., Melatonin, St. John's Wort, Fish Oil. Please separate each with a comma."
         )
         allergies = st.text_area(
-            "List any known allergies (comma-separated).",
+            "Please list any known allergies.",
             value=", ".join(user_profile.get("allergies", [])),
-            placeholder="e.g., Peanuts, Penicillin, Sulfa"
+            placeholder="e.g., Peanuts, Penicillin, Sulfa. Please separate each with a comma."
         )
 
     with st.container(border=True):
@@ -369,17 +370,17 @@ def main():
             )
 
         interested_supplements = st.text_area(
-            "Any specific vitamins you're interested in (comma-separated)?",
+            "Are there any specific vitamins or supplements you are interested in?",
             value=", ".join(user_profile.get("interested_supplements", [])),
-            placeholder="e.g., Vitamin D, Probiotics, Turmeric"
+            placeholder="e.g., Vitamin D, Probiotics, Turmeric. Please separate each with a comma."
         )
 
     with st.container(border=True):
         st.header("📝 Additional Information")
         additional_info = st.text_area(
-            "Is there anything else you would like to tell us?",
+            "Is there anything else you would like to share that might be relevant to your health?",
             value=user_profile.get("additional_info", ""),
-            placeholder="e.g., Previous sports, injuries, aches, pains, depression, anxiety, etc."
+            placeholder="e.g., Previous sports injuries, aches, pains, depression, anxiety, etc."
         )
 
     # --- Submission ---

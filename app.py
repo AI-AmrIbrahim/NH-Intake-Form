@@ -163,8 +163,8 @@ def main():
 
     st.markdown("""
     <div class="form-title-container">
-        <h1>Nutrition House AI Recommender</h1>
-        <p>This AI-powered tool is designed to provide personalized vitamin and supplement recommendations based on your individual needs. Please fill out the form below to get started.</p>
+        <h1>Create Your Nutrition House Profile</h1>
+        <p>Please fill out the form below to create your profile. Our AI-powered recommendation engine is currently in development and will soon provide personalized vitamin and supplement recommendations based on your individual needs.</p>
     </div>
     """, unsafe_allow_html=True)
     st.write("---")
@@ -217,22 +217,20 @@ def main():
         st.header("👤 Personal Information")
 
         if user_status == "No, I have not filled out the intake form before":
-            phone_number_input = st.text_input("Your Phone Number (to save and retrieve your profile)")
+            email_input = st.text_input("Your Email (to save and retrieve your profile)")
             col1, col2 = st.columns(2)
             with col1:
                 first_name_input = st.text_input("First Name", value=user_profile.get("first_name", ""))
             with col2:
                 last_name_input = st.text_input("Last Name", value=user_profile.get("last_name", ""))
-            email_input = st.text_input("Your Email", value=user_profile.get("email", ""))
         else: # Returning User
-            phone_number_input = user_profile.get("phone_number", "") # Use loaded profile data
-            st.text_input("Phone Number", value=phone_number_input, disabled=True)
+            email_input = user_profile.get("email", "") # Use loaded profile data
+            st.text_input("Email", value=email_input, disabled=True)
             col1, col2 = st.columns(2)
             with col1:
                 first_name_input = st.text_input("First Name", value=user_profile.get("first_name", ""), disabled=True)
             with col2:
                 last_name_input = st.text_input("Last Name", value=user_profile.get("last_name", ""), disabled=True)
-            email_input = st.text_input("Your Email", value=user_profile.get("email", ""), disabled=True)
 
         st.write("Date of Birth")
         today = datetime.date.today()
@@ -387,13 +385,13 @@ def main():
     st.write("---")
     col1, col2 = st.columns(2)
     with col1:
-        submitted = st.button("**Get My Recommendations**", use_container_width=True)
+        submitted = st.button("**Create My Profile**", use_container_width=True)
     with col2:
         st.button("Clear Form", on_click=clear_form, use_container_width=True)
 
     if submitted:
-        if not phone_number_input:
-            st.error("Please enter your phone number to save or retrieve your profile.")
+        if not email_input:
+            st.error("Please enter your email to save or retrieve your profile.")
         elif not re.match(r"^\d+$", age_input) or not (1 <= int(age_input) <= 120):
             st.error("Please enter a valid age (a number between 1 and 120).")
         else:
@@ -416,14 +414,14 @@ def main():
                 "additional_info": additional_info
             }
             
-            # Save the profile using phone number as the key
-            profiles[phone_number_input] = user_data
+            # Save the profile using email as the key
+            profiles[email_input] = user_data
             save_profiles(profiles)
 
             st.success(f"Profile for {first_name_input} {last_name_input} saved! We're analyzing your profile...")
-            with st.spinner("Our AI engine is generating your personalized recommendations..."):
-                recommendations = get_recommendations(user_data)
-                st.markdown(recommendations)
+            # with st.spinner("Our AI engine is generating your personalized recommendations..."):
+            #     recommendations = get_recommendations(user_data)
+            #     st.markdown(recommendations)
 
 if __name__ == "__main__":
     main()

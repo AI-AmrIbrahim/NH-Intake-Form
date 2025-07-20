@@ -2,34 +2,37 @@ import streamlit as st
 import re
 import json
 import os
-from supabase import create_client, Client
-from dotenv import load_dotenv
+import datetime
+import base64
 
-# --- Supabase Initialization ---
-load_dotenv()
+def clear_form():
+    st.session_state.user_profile = {}
 
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
-supabase: Client = create_client(url, key)
+# --- Helper Functions ---
+def get_base64_of_bin_file(bin_file):
+    """Reads a binary file and returns its base64 encoded string."""
+    try:
+        with open(bin_file, 'rb') as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except FileNotFoundError:
+        return None
 
-# --- Database Functions ---
-def load_profile_from_db(phone_number):
-    """Loads the most recent user profile from the database."""
-    response = supabase.table('user_medical_profiles').select("*").eq('phone_number', phone_number).order('created_at', desc=True).limit(1).execute()
-    if response.data:
-        profile = response.data[0]
-        if isinstance(profile.get('health_goals'), str):
+# --- Profile Management Functions ---
+def load_profiles():
+    """Loads user profiles from a JSON file."""
+    if os.path.exists("profiles.json"):
+        with open("profiles.json", "r") as f:
             try:
-                profile['health_goals'] = json.loads(profile['health_goals'])
+                return json.load(f)
             except json.JSONDecodeError:
-                profile['health_goals'] = []
-        return profile
-    return None
+                return {} # Return empty dict if file is empty or corrupted
+    return {}
 
-def save_profile_to_db(user_data):
-    """Saves a new user profile entry to the database."""
-    supabase.table('user_medical_profiles').insert(user_data).execute()
-
+def save_profiles(profiles):
+    """Saves user profiles to a JSON file."""
+    with open("profiles.json", "w") as f:
+        json.dump(profiles, f, indent=4)
 
 # --- AI Recommendation Function ---
 def get_recommendations(user_data):
@@ -52,23 +55,9 @@ def get_recommendations(user_data):
         interested_supplements=", ".join(user_data["interested_supplements"])
     )
 
-    # This part is commented out as it requires a valid API key.
-    # import google.generativeai as genai
-    # model = genai.GenerativeModel('gemini-pro')
-    # response = model.generate_content(prompt)
-    # return response.text
-    return "Recommendations will be generated here."
-
-
-def clear_form(full_clear=False):
-    if full_clear or st.session_state.get('user_status') == "New User":
-        st.session_state.user_profile = {}
-    else: # Partial clear for returning user
-        profile = st.session_state.get('user_profile', {})
-        st.session_state.user_profile = {
-            "name": profile.get("name"),
-            "phone_number": profile.get("phone_number")
-        }
+    model = genai.GenerativeModel('gemini-pro')
+    response = model.generate_content(prompt)
+    return response.text
 
 
 def main():
@@ -79,28 +68,121 @@ def main():
     # --- Page Configuration ---
     st.set_page_config(
         page_title="NutritionHouse AI",
-        page_icon="💊",
+        page_icon="NH_favicon.png",
         layout="centered"
     )
 
+    # --- Set Background Image ---
+    background_image_b64 = get_base64_of_bin_file('background.png')
+    if background_image_b64:
+        page_bg_img = f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{background_image_b64}");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }}
+        </style>
+        """
+        st.markdown(page_bg_img, unsafe_allow_html=True)
+
+
+    # --- Custom CSS for a more appealing design ---
+    st.markdown("""
+    <style>
+        /* Background fallback */
+        .stApp {
+            background-color: #000000;
+        }
+
+        /* Title and Headers */
+        .form-title-container h1 {
+            color: #222f62;
+            text-align: center;
+            font-weight: bold;
+            font-size: 2.5em;
+        }
+        h2, h3 {
+            color: #222f62;
+        }
+
+        /* Main text color */
+        p, label, .st-emotion-cache-16txtl3, .st-emotion-cache-10trblm, div[data-baseweb="radio"] > label {
+            color: #212529 !important;
+        }
+        .form-title-container p {
+            text-align: center;
+        }
+
+        /* Button Styling */
+        .stButton>button {
+            border: 2px solid #222f62;
+            background-color: #5db2e1;
+            color: #FFFFFF;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .stButton>button:hover {
+            background-color: #222f62;
+            color: #FFFFFF;
+        }
+
+        /* Input widgets */
+        .stTextInput>div>div>input, .stTextArea>div>div>textarea {
+            background-color: #FFFFFF;
+            border: 1px solid #DDDDDD;
+            border-radius: 5px;
+            color: #212529;
+        }
+
+        /* Container Styling */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            background-color: #FFFFFF;
+            border: 1px solid #DDDDDD;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Custom container for title/description */
+        .form-title-container {
+            background-color: #FFFFFF;
+            border: 1px solid #DDDDDD;
+            border-radius: 10px;
+            padding: 15px 25px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+
     # --- Header ---
-    st.title("NutritionHouse AI Recommender")
-    st.write("Discover the perfect vitamins for you. Answer a few questions to get started!")
+    with st.container(border=True):
+        st.image("NH_logo.png", use_container_width=True)
+
+    st.markdown("""
+    <div class="form-title-container">
+        <h1>Nutrition House AI Recommender</h1>
+        <p>Discover the perfect vitamins for you. Answer a few questions to get started!</p>
+    </div>
+    """, unsafe_allow_html=True)
     st.write("---")
 
     # --- User Status Selection ---
-    st.radio(
-        "Are you a new or returning user?",
-        ("New User", "Returning User"),
-        key='user_status',
-        on_change=clear_form, args=(True,)
-    )
-    user_status = st.session_state.get('user_status', "New User")
+    with st.container(border=True):
+        st.radio(
+            "Do you have a profile with Nutrition House?",
+            ("Yes, I have filled out the intake form before", "No, I have not filled out the intake form before"),
+            key='user_status',
+            on_change=clear_form
+        )
+    user_status = st.session_state.get('user_status', "No, I have not filled out the intake form before")
 
     phone_number_input = ""
     user_profile = {}
 
-    if user_status == "Returning User":
+    if user_status == "Yes, I have filled out the intake form before":
         phone_number_input = st.text_input("Enter your phone number to load your profile:")
         if st.button("Load Profile"):
             profile = load_profile_from_db(phone_number_input)
@@ -122,41 +204,107 @@ def main():
         user_profile = st.session_state.user_profile
     else:
         user_profile = {
-            "name": "", "age": "", "sex": "Male", "height_m": "", "weight_kg": "",
+            "first_name": "", "last_name": "", "email": "", "age": "", "sex": "Male", "height_m": "", "weight_kg": "",
+            "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
             "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
-            "current_medications": [], "allergies": [], "health_goals": [],
-            "interested_supplements": []
+            "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
+            "interested_supplements": [], "additional_info": ""
         }
 
     # --- Form Questions ---
     with st.container(border=True):
         st.header("👤 Personal Information")
 
-        if user_status == "New User":
+        if user_status == "No, I have not filled out the intake form before":
             phone_number_input = st.text_input("Your Phone Number (to save and retrieve your profile)")
-            name_input = st.text_input("Your Name", value=user_profile.get("name", ""))
+            col1, col2 = st.columns(2)
+            with col1:
+                first_name_input = st.text_input("First Name", value=user_profile.get("first_name", ""))
+            with col2:
+                last_name_input = st.text_input("Last Name", value=user_profile.get("last_name", ""))
+            email_input = st.text_input("Your Email", value=user_profile.get("email", ""))
         else: # Returning User
             phone_number_input = user_profile.get("phone_number", "") # Use loaded profile data
             st.text_input("Phone Number", value=phone_number_input, disabled=True)
-            name_input = st.text_input("Your Name", value=user_profile.get("name", ""), disabled=True)
+            col1, col2 = st.columns(2)
+            with col1:
+                first_name_input = st.text_input("First Name", value=user_profile.get("first_name", ""), disabled=True)
+            with col2:
+                last_name_input = st.text_input("Last Name", value=user_profile.get("last_name", ""), disabled=True)
+            email_input = st.text_input("Your Email", value=user_profile.get("email", ""), disabled=True)
 
-        age_input = st.text_input("Your Age", value=str(user_profile.get("age", "")))
-        st.write("Your Height")
+        st.write("Date of Birth")
+        today = datetime.date.today()
+        month_names = [datetime.date(2024, i, 1).strftime('%B') for i in range(1, 13)]
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            month_name = st.selectbox("Month", month_names, 0)
+            month = month_names.index(month_name) + 1
+        with col2:
+            day = st.selectbox("Day", list(range(1, 32)), 0)
+        with col3:
+            year = st.selectbox("Year", list(range(1920, today.year + 1)), 80)
+
+        try:
+            dob = datetime.date(year, month, day)
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        except ValueError:
+            st.error("Please enter a valid date of birth.")
+            age = 0
+
         col1, col2 = st.columns(2)
         with col1:
-            feet_input = st.text_input("Feet", value=str(user_profile.get("height_ft", "")))
+            height_ft = st.selectbox("Height (ft)", list(range(4, 7)), 1)
         with col2:
-            inches_input = st.text_input("Inches", value=str(user_profile.get("height_in", "")))
+            height_in = st.selectbox("Height (in)", list(range(0, 12)), 6)
+
         weight_input = st.text_input("Your Weight (in lbs)", value=str(user_profile.get("weight_lbs", "")))
         st.write("") # Adds a little vertical space
         sex_options = ('Male', 'Female')
         sex = st.radio("Biological Sex", sex_options, index=sex_options.index(user_profile.get("sex", "Male")))
 
     with st.container(border=True):
+        st.header("🏃 Lifestyle")
+        activity_options = ["0-1 days", "1-2 days", "3-4 days", "5-7 days"]
+        physical_activity = st.selectbox(
+            "How many days per week do you engage in physical activity (workout, sport, walking, etc.)?",
+            activity_options,
+            index=activity_options.index(user_profile.get("physical_activity", "3-4 days"))
+        )
+        energy_level = st.select_slider(
+            "How would you rate your energy on a typical day?",
+            options=["Very Low", "Low", "Neutral", "High", "Very High"],
+            value=user_profile.get("energy_level", "Neutral")
+        )
+        diet_options = ["Clean/Whole food", "High Protein", "Plant-based", "Low carb/keto", "Fast-food often", "I don't follow a specific diet"]
+        diet = st.selectbox(
+            "Which of the following best describes your diet?",
+            diet_options,
+            index=diet_options.index(user_profile.get("diet", "I don't follow a specific diet"))
+        )
+        meals_per_day = st.selectbox(
+            "How many meals do you typically eat per day?",
+            ["1", "2", "3", "More than 3"],
+            index=0
+        )
+        sleep_quality = st.select_slider(
+            "How would you rate your sleep quality?",
+            options=["Poor", "Fair", "Good", "Excellent"],
+            value=user_profile.get("sleep_quality", "Good")
+        )
+        stress_level = st.select_slider(
+            "How would you rate your average stress level?",
+            options=["Low", "Moderate", "High"],
+            value=user_profile.get("stress_level", "Moderate")
+        )
+
+
+    with st.container(border=True):
         st.header("⚕️ Medical History")
         pregnant_or_breastfeeding = "Not Applicable"
         if sex == 'Female':
             pob_options = ('No', 'Yes')
+            # Handle legacy "Not Applicable" value for returning users
             stored_pob = user_profile.get("pregnant_or_breastfeeding", "No")
             if stored_pob not in pob_options:
                 stored_pob = "No"
@@ -174,10 +322,15 @@ def main():
 
     with st.container(border=True):
         st.header("💊 Medications & Allergies")
-        current_medications = st.text_area(
-            "List any current medications (comma-separated).",
-            value=", ".join(user_profile.get("current_medications", [])),
-            placeholder="e.g., Lisinopril, Metformin, Ibuprofen"
+        medications = st.text_area(
+            "List any OTC, Over The Counter, or prescribed medications you are currently taking (comma-separated).",
+            value=", ".join(user_profile.get("medications", [])),
+            placeholder="e.g., Ibuprofen, Aspirin, Atorvastatin, Amlodipine, Metformin"
+        )
+        natural_supplements = st.text_area(
+            "List any natural supplements you are currently taking (comma-separated).",
+            value=", ".join(user_profile.get("natural_supplements", [])),
+            placeholder="e.g., Melatonin, St. John's Wort, Fish Oil"
         )
         allergies = st.text_area(
             "List any known allergies (comma-separated).",
@@ -190,22 +343,48 @@ def main():
         health_goals_options = [
             "Improve Energy", "Boost Immunity", "Support Joint Health",
             "Enhance Sleep Quality", "Improve Digestive Health", "Support Heart Health",
-            "Strengthen Bones", "Improve Mood & Focus"
+            "Strengthen Bones", "Improve Mood & Focus", "Other"
         ]
+        
+        # Limit multiselect to 2 options
+        if 'health_goals' not in st.session_state:
+            st.session_state.health_goals = user_profile.get("health_goals", [])
+
+        def limit_multiselect():
+            if len(st.session_state.health_goals) > 2:
+                st.session_state.health_goals = st.session_state.health_goals[:2]
+
         health_goals = st.multiselect(
-            "What are your primary health goals?",
+            "What are your primary health goals? (Select up to 2)",
             health_goals_options,
-            default=user_profile.get("health_goals", [])
+            key="health_goals",
+            on_change=limit_multiselect
         )
+
+        other_health_goal = ""
+        if "Other" in health_goals:
+            other_health_goal = st.text_input(
+                "Please specify your other health goal:",
+                value=user_profile.get("other_health_goal", "")
+            )
+
         interested_supplements = st.text_area(
             "Any specific vitamins you're interested in (comma-separated)?",
             value=", ".join(user_profile.get("interested_supplements", [])),
             placeholder="e.g., Vitamin D, Probiotics, Turmeric"
         )
 
+    with st.container(border=True):
+        st.header("📝 Additional Information")
+        additional_info = st.text_area(
+            "Is there anything else you would like to tell us?",
+            value=user_profile.get("additional_info", ""),
+            placeholder="e.g., Previous sports, injuries, aches, pains, depression, anxiety, etc."
+        )
+
     # --- Submission ---
     st.write("---")
-    col1, col2 = st.columns([1, 0.3])
+    col1, col2 = st.columns(2)
     with col1:
         submitted = st.button("**Get My Recommendations**", use_container_width=True)
     with col2:
@@ -217,39 +396,30 @@ def main():
         elif not re.match(r"^\d+$", age_input) or not (1 <= int(age_input) <= 120):
             st.error("Please enter a valid age (a number between 1 and 120).")
         else:
-            try:
-                feet = int(feet_input)
-                inches = int(inches_input)
-                weight_lbs = float(weight_input)
-
-                # Convert to metric
-                height_m = (feet * 12 + inches) * 0.0254
-                weight_kg = weight_lbs * 0.453592
-                bmi = round(weight_kg / (height_m ** 2), 2) if height_m > 0 else 0
-            except (ValueError, ZeroDivisionError):
-                st.error("Please enter valid numbers for height and weight.")
-                st.stop()
-
-
             user_data = {
-                "phone_number": phone_number_input,
-                "name": name_input,
+                "first_name": first_name_input,
+                "last_name": last_name_input,
+                "email": email_input,
                 "age": int(age_input),
                 "sex": sex,
-                "height_m": height_m,
-                "weight_kg": weight_kg,
-                "bmi": bmi,
+                "physical_activity": physical_activity,
+                "energy_level": energy_level,
+                "diet": diet,
                 "pregnant_or_breastfeeding": pregnant_or_breastfeeding,
                 "medical_conditions": [c.strip() for c in medical_conditions.split(',') if c.strip()],
                 "current_medications": [m.strip() for m in current_medications.split(',') if m.strip()],
                 "allergies": [a.strip() for a in allergies.split(',') if a.strip()],
                 "health_goals": health_goals,
-                "interested_supplements": [s.strip() for s in interested_supplements.split(',') if s.strip()]
+                "other_health_goal": other_health_goal,
+                "interested_supplements": [s.strip() for s in interested_supplements.split(',') if s.strip()],
+                "additional_info": additional_info
             }
+            
+            # Save the profile using phone number as the key
+            profiles[phone_number_input] = user_data
+            save_profiles(profiles)
 
-            save_profile_to_db(user_data)
-
-            st.success(f"Profile for {name_input} saved! We're analyzing your profile...")
+            st.success(f"Profile for {first_name_input} {last_name_input} saved! We're analyzing your profile...")
             with st.spinner("Our AI engine is generating your personalized recommendations..."):
                 recommendations = get_recommendations(user_data)
                 st.markdown(recommendations)

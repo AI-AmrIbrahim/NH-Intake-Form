@@ -20,54 +20,21 @@ def get_base64_of_bin_file(bin_file):
 
 # --- Profile Management Functions ---
 def load_profiles():
-    """Loads user profiles from a JSON file."""
-    if os.path.exists("profiles.json"):
-        with open("profiles.json", "r") as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return {} # Return empty dict if file is empty or corrupted
-    return {}
+    """Loads user profiles from a Supabase database."""
+    pass
 
 def save_profiles(profiles):
-    """Saves user profiles to a JSON file."""
-    with open("profiles.json", "w") as f:
-        json.dump(profiles, f, indent=4)
-
-# --- AI Recommendation Function ---
-def get_recommendations(user_data):
-    """Generates supplement recommendations using the Gemini API."""
-    try:
-        with open("recommendation_prompt.md", "r") as f:
-            prompt_template = f.read()
-    except FileNotFoundError:
-        st.error("The 'recommendation_prompt.md' file is missing.")
-        return ""
-
-    prompt = prompt_template.format(
-        age=user_data["age"],
-        sex=user_data["sex"],
-        pregnant_or_breastfeeding=user_data["pregnant_or_breastfeeding"],
-        medical_conditions=", ".join(user_data["medical_conditions"]),
-        current_medications=", ".join(user_data["current_medications"]),
-        allergies=", ".join(user_data["allergies"]),
-        health_goals=", ".join(user_data["health_goals"]),
-        interested_supplements=", ".join(user_data["interested_supplements"])
-    )
-
-    model = genai.GenerativeModel('gemini-pro')
-    response = model.generate_content(prompt)
-    return response.text
-
+    """Saves user profiles to a Supabase database."""
+    pass
 
 def main():
     """
-    Main function to run the Streamlit application for NutritionHouse.
+    Main function to run the Streamlit application for Nutrition House.
     This app serves as the intake form and will display recommendations.
     """
     # --- Page Configuration ---
     st.set_page_config(
-        page_title="NutritionHouse AI",
+        page_title="Nutrition House AI",
         page_icon="NH_favicon.png",
         layout="centered"
     )
@@ -173,7 +140,7 @@ def main():
     with st.container(border=True):
         st.radio(
             "Do you have a profile with Nutrition House?",
-            ("Yes, I have filled out the intake form before", "No, I have not filled out the intake form before"),
+            ("No, I have not filled out the intake form before", "Yes, I have filled out the intake form before"),
             key='user_status',
             on_change=clear_form
         )
@@ -181,6 +148,7 @@ def main():
 
     email_input = ""
     user_profile = {}
+    profiles = {}
 
     if user_status == "Yes, I have filled out the intake form before":
         with st.container(border=True):
@@ -205,7 +173,7 @@ def main():
         user_profile = st.session_state.user_profile
     else:
         user_profile = {
-            "first_name": "", "last_name": "", "email": "", "age": "", "sex": "Male", "height_m": "", "weight_kg": "",
+            "first_name": "", "last_name": "", "email": "", "dob": None, "sex": "Male", "height_m": "", "weight_kg": "",
             "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
             "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
             "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
@@ -235,14 +203,27 @@ def main():
         st.write("Date of Birth")
         today = datetime.date.today()
         month_names = [datetime.date(2024, i, 1).strftime('%B') for i in range(1, 13)]
+
+        # Load DOB from profile if it exists
+        user_dob = user_profile.get("dob")
+        if isinstance(user_dob, str):
+            try:
+                user_dob = datetime.datetime.strptime(user_dob, "%Y-%m-%d").date()
+            except ValueError:
+                user_dob = None # Handle invalid format
+        
+        initial_year = user_dob.year if user_dob else 1990
+        initial_month_index = user_dob.month - 1 if user_dob else 0
+        initial_day_index = user_dob.day - 1 if user_dob else 0
+
         col1, col2, col3 = st.columns(3)
         with col1:
-            month_name = st.selectbox("Month", month_names, 0)
+            month_name = st.selectbox("Month", month_names, index=initial_month_index)
             month = month_names.index(month_name) + 1
         with col2:
-            day = st.selectbox("Day", list(range(1, 32)), 0)
+            day = st.selectbox("Day", list(range(1, 32)), index=initial_day_index)
         with col3:
-            year = st.selectbox("Year", list(range(1920, today.year + 1)), 80)
+            year = st.selectbox("Year", list(range(1920, today.year + 1)), index=list(range(1920, today.year + 1)).index(initial_year))
 
         try:
             dob = datetime.date(year, month, day)
@@ -250,6 +231,7 @@ def main():
         except ValueError:
             st.error("Please enter a valid date of birth.")
             age = 0
+            dob = None
 
         col1, col2 = st.columns(2)
         with col1:
@@ -392,21 +374,34 @@ def main():
     if submitted:
         if not email_input:
             st.error("Please enter your email to save or retrieve your profile.")
-        elif not re.match(r"^\d+$", age_input) or not (1 <= int(age_input) <= 120):
-            st.error("Please enter a valid age (a number between 1 and 120).")
         else:
+            # Convert imperial height to metric
+            height_m = (height_ft * 12 + height_in) * 0.0254
+
+            # Convert weight from lbs to kg
+            try:
+                weight_kg = float(weight_input) * 0.453592
+            except ValueError:
+                weight_kg = 0 # Or handle error appropriately
+
             user_data = {
                 "first_name": first_name_input,
                 "last_name": last_name_input,
                 "email": email_input,
-                "age": int(age_input),
+                "dob": dob.isoformat() if dob else None,
                 "sex": sex,
+                "height_m": height_m,
+                "weight_kg": weight_kg,
                 "physical_activity": physical_activity,
                 "energy_level": energy_level,
                 "diet": diet,
+                "meals_per_day": meals_per_day,
+                "sleep_quality": sleep_quality,
+                "stress_level": stress_level,
                 "pregnant_or_breastfeeding": pregnant_or_breastfeeding,
                 "medical_conditions": [c.strip() for c in medical_conditions.split(',') if c.strip()],
-                "current_medications": [m.strip() for m in current_medications.split(',') if m.strip()],
+                "current_medications": [m.strip() for m in medications.split(',') if m.strip()],
+                "natural_supplements": [ns.strip() for ns in natural_supplements.split(',') if ns.strip()],
                 "allergies": [a.strip() for a in allergies.split(',') if a.strip()],
                 "health_goals": health_goals,
                 "other_health_goal": other_health_goal,
@@ -419,9 +414,6 @@ def main():
             save_profiles(profiles)
 
             st.success(f"Profile for {first_name_input} {last_name_input} saved! We're analyzing your profile...")
-            # with st.spinner("Our AI engine is generating your personalized recommendations..."):
-            #     recommendations = get_recommendations(user_data)
-            #     st.markdown(recommendations)
-
+            
 if __name__ == "__main__":
     main()

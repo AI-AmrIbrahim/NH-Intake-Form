@@ -1,51 +1,13 @@
 import streamlit as st
 import datetime
-
-from src.utils import get_base64_of_bin_file
+from src.utils.file_utils import get_base64_of_bin_file
+from src.utils.session_utils import clear_form
 from src.view.personal_info import personal_info_form
 from src.view.lifestyle import lifestyle_form
 from src.view.medical_history import medical_history_form
 from src.view.medications_allergies import medications_allergies_form
 from src.view.health_goals import health_goals_form
 from src.view.additional_info import additional_info_form
-
-def clear_form():
-    """Resets the user profile and health goals in the session state."""
-    user_status = st.session_state.get("user_status")
-
-    personal_info = {}
-    if user_status == "Yes, I have filled out the intake form before":
-        personal_keys = [
-            "first_name",
-            "last_name",
-            "email",
-            "dob",
-            "sex",
-            "height_m",
-            "weight_kg",
-            "height_ft",
-            "height_in",
-            "weight_lbs",
-        ]
-        for key in personal_keys:
-            if key in st.session_state.user_profile:
-                personal_info[key] = st.session_state.user_profile[key]
-
-    # Reset the profile to its default state
-    st.session_state.user_profile = {
-        "first_name": "", "last_name": "", "email": "", "dob": None, "sex": "Male", "height_m": "", "weight_kg": "",
-        "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
-        "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
-        "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
-        "interested_supplements": [], "additional_info": ""
-    }
-
-    # Restore personal info if it was saved
-    if personal_info:
-        st.session_state.user_profile.update(personal_info)
-
-    if "health_goals" in st.session_state:
-        st.session_state.health_goals = []
 
 def main():
     """

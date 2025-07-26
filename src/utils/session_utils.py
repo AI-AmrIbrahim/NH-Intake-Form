@@ -48,7 +48,8 @@ def clear_form():
 
     personal_info_keys = [
         "first_name", "last_name", "email", 
-        "dob_month", "dob_day", "dob_year", "sex"
+        "dob_month", "dob_day", "dob_year", "sex",
+        "load_email"
     ]
 
     for key, default_value in FORM_FIELDS.items():

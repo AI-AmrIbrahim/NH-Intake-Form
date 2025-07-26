@@ -145,7 +145,7 @@ def main():
 
     if user_status == "Yes, I have filled out the intake form before":
         with st.container(border=True):
-            email_input = st.text_input("Enter your email to load your profile:")
+            email_input = st.text_input("Enter your email to load your profile:", key="load_email")
             if st.button("Load Profile"):
                 profile = load_profile_from_db(email_input)
                 if profile:

@@ -15,12 +15,13 @@ def medical_history_form(user_profile, sex):
             pregnant_or_breastfeeding = st.radio(
                 "Are you currently pregnant or breastfeeding?",
                 pob_options,
-                index=pob_index
+                key="pregnant_or_breastfeeding"
             )
         medical_conditions = st.text_area(
             "Please list any pre-existing medical conditions.",
             value=", ".join(user_profile.get("medical_conditions", [])),
-            placeholder="e.g., High blood pressure, Asthma, Diabetes. Please separate each condition with a comma."
+            placeholder="e.g., High blood pressure, Asthma, Diabetes. Please separate each condition with a comma.",
+            key="medical_conditions"
         )
 
         return {

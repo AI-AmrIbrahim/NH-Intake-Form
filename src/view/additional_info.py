@@ -7,7 +7,8 @@ def additional_info_form(user_profile):
         additional_info = st.text_area(
             "Is there anything else you would like to share that might be relevant to your health?",
             value=user_profile.get("additional_info", ""),
-            placeholder="e.g., Previous sports injuries, aches, pains, depression, anxiety, etc."
+            placeholder="e.g., Previous sports injuries, aches, pains, depression, anxiety, etc.",
+            key="additional_info"
         )
 
         return {

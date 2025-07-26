@@ -35,7 +35,8 @@ def health_goals_form(user_profile):
         interested_supplements = st.text_area(
             "Are there any specific vitamins or supplements you are interested in?",
             value=", ".join(user_profile.get("interested_supplements", [])),
-            placeholder="e.g., Vitamin D, Probiotics, Turmeric. Please separate each with a comma."
+            placeholder="e.g., Vitamin D, Probiotics, Turmeric. Please separate each with a comma.",
+            key="interested_supplements"
         )
 
         return {

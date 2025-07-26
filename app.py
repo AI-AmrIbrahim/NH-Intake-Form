@@ -6,7 +6,16 @@ import datetime
 import base64
 
 def clear_form():
-    st.session_state.user_profile = {}
+    """Resets the user profile and health goals in the session state."""
+    st.session_state.user_profile = {
+        "first_name": "", "last_name": "", "email": "", "dob": None, "sex": "Male", "height_m": "", "weight_kg": "",
+        "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
+        "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
+        "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
+        "interested_supplements": [], "additional_info": ""
+    }
+    if 'health_goals' in st.session_state:
+        st.session_state.health_goals = []
 
 # --- Helper Functions ---
 def get_base64_of_bin_file(bin_file):
@@ -147,8 +156,19 @@ def main():
     user_status = st.session_state.get('user_status', "No, I have not filled out the intake form before")
 
     email_input = ""
-    user_profile = {}
     profiles = {}
+
+    # --- Profile State Management ---
+    # Ensure user_profile is initialized in session_state
+    if 'user_profile' not in st.session_state:
+        st.session_state.user_profile = {
+            "first_name": "", "last_name": "", "email": "", "dob": None, "sex": "Male", "height_m": "", "weight_kg": "",
+            "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
+            "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
+            "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
+            "interested_supplements": [], "additional_info": ""
+        }
+    user_profile = st.session_state.user_profile
 
     if user_status == "Yes, I have filled out the intake form before":
         with st.container(border=True):
@@ -169,23 +189,13 @@ def main():
                 else:
                     st.error("Profile not found. Please check the email or create a new profile.")
 
-    if 'user_profile' in st.session_state:
-        user_profile = st.session_state.user_profile
-    else:
-        user_profile = {
-            "first_name": "", "last_name": "", "email": "", "dob": None, "sex": "Male", "height_m": "", "weight_kg": "",
-            "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
-            "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
-            "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
-            "interested_supplements": [], "additional_info": ""
-        }
 
     # --- Form Questions ---
     with st.container(border=True):
         st.header("👤 Personal Information")
 
         if user_status == "No, I have not filled out the intake form before":
-            email_input = st.text_input("Your Email (to save and retrieve your profile)")
+            email_input = st.text_input("Email")
             col1, col2 = st.columns(2)
             with col1:
                 first_name_input = st.text_input("First Name", value=user_profile.get("first_name", ""))
@@ -233,13 +243,14 @@ def main():
             age = 0
             dob = None
 
+        st.write("Height")
         col1, col2 = st.columns(2)
         with col1:
-            height_ft = st.selectbox("Height (ft)", list(range(4, 7)), 1)
+            height_ft = st.selectbox("Feet", list(range(4, 7)), 1)
         with col2:
-            height_in = st.selectbox("Height (in)", list(range(0, 12)), 6)
+            height_in = st.selectbox("Inches", list(range(0, 12)), 6)
 
-        weight_input = st.text_input("Your Weight (in lbs)", value=str(user_profile.get("weight_lbs", "")))
+        weight_input = st.text_input("Weight (in lbs)", value=str(user_profile.get("weight_lbs", "")))
         st.write("") # Adds a little vertical space
         sex_options = ('Male', 'Female')
         sex = st.radio("Biological Sex", sex_options, index=sex_options.index(user_profile.get("sex", "Male")))

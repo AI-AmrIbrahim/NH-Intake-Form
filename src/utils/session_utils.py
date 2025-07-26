@@ -1,42 +1,58 @@
-
 import streamlit as st
+import datetime
+
+# A dictionary of all form fields and their default values
+FORM_FIELDS = {
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "dob_month": "January",
+    "dob_day": 1,
+    "dob_year": 1990,
+    "sex": "Male",
+    "height_ft": 5,
+    "height_in": 6,
+    "weight_lbs": "",
+    "physical_activity": "3-4 days",
+    "energy_level": "Neutral",
+    "diet": "I don't follow a specific diet",
+    "meals_per_day": "3",
+    "sleep_quality": "Good",
+    "stress_level": "Moderate",
+    "pregnant_or_breastfeeding": "No",
+    "medical_conditions": "",
+    "medications": "",
+    "natural_supplements": "",
+    "allergies": "",
+    "health_goals": [],
+    "other_health_goal": "",
+    "interested_supplements": "",
+    "additional_info": ""
+}
+
+def initialize_session_state():
+    """Initializes the session state with default values for all form fields."""
+    for key, default_value in FORM_FIELDS.items():
+        if key not in st.session_state:
+            st.session_state[key] = default_value
+    
+    if 'user_status' not in st.session_state:
+        st.session_state['user_status'] = "No, I have not filled out the intake form before"
 
 def clear_form():
     """
-    Resets user profile data in Streamlit session state.
-
-    For new users, it clears all profile data. For returning users, it preserves
-    personal information while resetting lifestyle and health-related data to their
-    default values.
+    Resets the form fields in the session state.
+    If the user is returning, personal information is preserved.
     """
-    user_status = st.session_state.get("user_status", "No, I have not filled out the intake form before")
+    user_status = st.session_state.get("user_status")
 
-    # Default user profile structure
-    default_profile = {
-        "first_name": "", "last_name": "", "email": "", "dob": None, "sex": "Male",
-        "height_m": "", "weight_kg": "", "physical_activity": "3-4 days",
-        "energy_level": "Neutral", "diet": "I don't follow a specific diet",
-        "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
-        "current_medications": [], "allergies": [], "health_goals": [],
-        "other_health_goal": "", "interested_supplements": [], "additional_info": ""
-    }
+    personal_info_keys = [
+        "first_name", "last_name", "email", 
+        "dob_month", "dob_day", "dob_year", "sex"
+    ]
 
-    if user_status == "Yes, I have filled out the intake form before":
-        # Preserve personal info for returning users
-        personal_info = {}
-        personal_keys = ["first_name", "last_name", "email", "dob", "sex"]
-        if "user_profile" in st.session_state:
-            for key in personal_keys:
-                if key in st.session_state.user_profile:
-                    personal_info[key] = st.session_state.user_profile[key]
-
-        # Reset profile but restore personal info
-        st.session_state.user_profile = default_profile
-        st.session_state.user_profile.update(personal_info)
-    else:
-        # Reset everything for new users
-        st.session_state.user_profile = default_profile
-
-    # Clear health_goals from session state regardless of user status
-    if "health_goals" in st.session_state:
-        st.session_state.health_goals = []
+    for key, default_value in FORM_FIELDS.items():
+        if user_status == "Yes, I have filled out the intake form before" and key in personal_info_keys:
+            # Don't clear personal info for returning users
+            continue
+        st.session_state[key] = default_value

@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 from src.utils.file_utils import get_base64_of_bin_file
 from src.utils.session_utils import clear_form
+from src.utils.style_utils import inject_css
 from src.view.personal_info import personal_info_form
 from src.view.lifestyle import lifestyle_form
 from src.view.medical_history import medical_history_form
@@ -37,73 +38,8 @@ def main():
         st.markdown(page_bg_img, unsafe_allow_html=True)
 
 
-    # --- Custom CSS for a more appealing design ---
-    st.markdown("""
-    <style>
-        /* Background fallback */
-        .stApp {
-            background-color: #000000;
-        }
-
-        /* Title and Headers */
-        .form-title-container h1 {
-            color: #222f62;
-            text-align: center;
-            font-weight: bold;
-            font-size: 2.5em;
-        }
-        h2, h3 {
-            color: #222f62;
-        }
-
-        /* Main text color */
-        p, label, .st-emotion-cache-16txtl3, .st-emotion-cache-10trblm, div[data-baseweb="radio"] > label {
-            color: #212529 !important;
-        }
-        .form-title-container p {
-            text-align: center;
-        }
-
-        /* Button Styling */
-        .stButton>button {
-            border: 2px solid #222f62;
-            background-color: #5db2e1;
-            color: #FFFFFF;
-            border-radius: 10px;
-            font-weight: bold;
-        }
-        .stButton>button:hover {
-            background-color: #222f62;
-            color: #FFFFFF;
-        }
-
-        /* Input widgets */
-        .stTextInput>div>div>input, .stTextArea>div>div>textarea {
-            background-color: #FFFFFF;
-            border: 1px solid #DDDDDD;
-            border-radius: 5px;
-            color: #212529;
-        }
-
-        /* Container Styling */
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            background-color: #FFFFFF;
-            border: 1px solid #DDDDDD;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        /* Custom container for title/description */
-        .form-title-container {
-            background-color: #FFFFFF;
-            border: 1px solid #DDDDDD;
-            border-radius: 10px;
-            padding: 15px 25px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    # --- Custom CSS ---
+    inject_css('src/style/style.css')
 
 
     # --- Header ---
@@ -146,7 +82,7 @@ def main():
     if user_status == "Yes, I have filled out the intake form before":
         with st.container(border=True):
             email_input = st.text_input("Enter your email to load your profile:", key="load_email")
-            if st.button("Load Profile"):
+            if st.button("Load Profile", key="load_profile"):
                 profile = load_profile_from_db(email_input)
                 if profile:
                     # Convert metric height/weight from DB to imperial for display
@@ -175,9 +111,9 @@ def main():
     st.write("---")
     col1, col2 = st.columns(2)
     with col1:
-        submitted = st.button("**Create My Profile**", use_container_width=True)
+        submitted = st.button("**Create My Profile**", use_container_width=True, key="create_profile")
     with col2:
-        st.button("Clear Form", on_click=clear_form, use_container_width=True)
+        st.button("Clear Form", on_click=clear_form, use_container_width=True, key="clear_form")
 
     if submitted:
         if not personal_info["email"]:

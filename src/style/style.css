@@ -1,0 +1,62 @@
+/* Background fallback */
+.stApp {
+    background-color: #000000;
+}
+
+/* Title and Headers */
+.form-title-container h1 {
+    color: #222f62;
+    text-align: center;
+    font-weight: bold;
+    font-size: 2.5em;
+}
+h2, h3 {
+    color: #222f62;
+}
+
+/* Main text color */
+p, label, .st-emotion-cache-16txtl3, .st-emotion-cache-10trblm, div[data-baseweb="radio"] > label {
+    color: #212529 !important;
+}
+.form-title-container p {
+    text-align: center;
+}
+
+/* Button Styling */
+.stButton>button {
+    border: 2px solid #222f62;
+    background-color: #5db2e1;
+    color: #FFFFFF;
+    border-radius: 10px;
+    font-weight: bold;
+}
+.stButton>button:hover {
+    background-color: #222f62;
+    color: #FFFFFF;
+}
+
+/* Input widgets */
+.stTextInput>div>div>input, .stTextArea>div>div>textarea {
+    background-color: #FFFFFF;
+    border: 1px solid #DDDDDD;
+    border-radius: 5px;
+    color: #212529;
+}
+
+/* Container Styling */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background-color: #FFFFFF;
+    border: 1px solid #DDDDDD;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Custom container for title/description */
+.form-title-container {
+    background-color: #FFFFFF;
+    border: 1px solid #DDDDDD;
+    border-radius: 10px;
+    padding: 15px 25px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}

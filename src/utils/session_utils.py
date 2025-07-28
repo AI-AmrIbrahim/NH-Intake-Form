@@ -1,34 +1,6 @@
 import streamlit as st
 import datetime
-
-# A dictionary of all form fields and their default values
-FORM_FIELDS = {
-    "first_name": "",
-    "last_name": "",
-    "email": "",
-    "dob_month": "January",
-    "dob_day": 1,
-    "dob_year": 1990,
-    "sex": "Male",
-    "height_ft": 5,
-    "height_in": 6,
-    "weight_lbs": "",
-    "physical_activity": "3-4 days",
-    "energy_level": "Neutral",
-    "diet": "I don't follow a specific diet",
-    "meals_per_day": "3",
-    "sleep_quality": "Good",
-    "stress_level": "Moderate",
-    "pregnant_or_breastfeeding": "No",
-    "medical_conditions": "",
-    "medications": "",
-    "natural_supplements": "",
-    "allergies": "",
-    "health_goals": [],
-    "other_health_goal": "",
-    "interested_supplements": "",
-    "additional_info": ""
-}
+from src.config.form_defaults import FORM_FIELDS
 
 def initialize_session_state():
     """Initializes the session state with default values for all form fields."""

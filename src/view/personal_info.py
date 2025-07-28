@@ -1,5 +1,6 @@
 import streamlit as st
 import datetime
+from src.config.form_defaults import FORM_FIELDS
 
 def personal_info_form(user_profile, user_status):
     """Renders the personal information section of the form."""
@@ -9,10 +10,21 @@ def personal_info_form(user_profile, user_status):
         # Determine if user is returning (for cleaner code)
         is_returning_user = user_status != "No, I have not filled out the intake form before"
 
+        # Initialize session state for all fields
+        if "email" not in st.session_state:
+            st.session_state.email = user_profile.get("email", FORM_FIELDS["email"])
+        if "first_name" not in st.session_state:
+            st.session_state.first_name = user_profile.get("first_name", FORM_FIELDS["first_name"])
+        if "last_name" not in st.session_state:
+            st.session_state.last_name = user_profile.get("last_name", FORM_FIELDS["last_name"])
+        if "weight_lbs" not in st.session_state:
+            st.session_state.weight_lbs = str(user_profile.get("weight_lbs", FORM_FIELDS["weight_lbs"]))
+        if "sex" not in st.session_state:
+            st.session_state.sex = user_profile.get("sex", FORM_FIELDS["sex"])
+
         # Email
         email_input = st.text_input(
             "Email", 
-            value=user_profile.get("email", ""), 
             disabled=is_returning_user, 
             key="email"
         )
@@ -23,14 +35,12 @@ def personal_info_form(user_profile, user_status):
         with col1:
             first_name_input = st.text_input(
                 "First Name", 
-                value=user_profile.get("first_name", ""), 
                 disabled=is_returning_user, 
                 key="first_name"
             )
         with col2:
             last_name_input = st.text_input(
                 "Last Name", 
-                value=user_profile.get("last_name", ""), 
                 disabled=is_returning_user, 
                 key="last_name"
             )
@@ -48,7 +58,7 @@ def personal_info_form(user_profile, user_status):
             except ValueError:
                 user_dob = None
 
-        initial_year = user_dob.year if user_dob else 1990
+        initial_year = user_dob.year if user_dob else FORM_FIELDS["dob_year"]
         initial_month_index = user_dob.month - 1 if user_dob else 0
         initial_day_index = user_dob.day - 1 if user_dob else 0
 
@@ -65,7 +75,6 @@ def personal_info_form(user_profile, user_status):
             month_name = st.selectbox(
                 "Month", 
                 month_names, 
-                index=initial_month_index, 
                 disabled=is_returning_user, 
                 key="dob_month"
             )
@@ -74,17 +83,12 @@ def personal_info_form(user_profile, user_status):
             day = st.selectbox(
                 "Day", 
                 list(range(1, 32)), 
-                index=initial_day_index, 
                 disabled=is_returning_user, 
                 key="dob_day"
             )
         with col3:
             year_list = list(range(1920, today.year + 1))
-            if "dob_year" not in st.session_state:
-                index = year_list.index(initial_year)
-                year = st.selectbox("Year", year_list, index=index, key="dob_year")
-            else:
-                year = st.selectbox("Year", year_list, key="dob_year")
+            year = st.selectbox("Year", year_list, disabled=is_returning_user, key="dob_year")
 
         try:
             dob = datetime.date(year, month, day)
@@ -94,9 +98,9 @@ def personal_info_form(user_profile, user_status):
 
         # Height - editable for both new and returning users
         if "height_ft" not in st.session_state:
-            st.session_state["height_ft"] = user_profile.get("height_ft", 5)
+            st.session_state["height_ft"] = user_profile.get("height_ft", FORM_FIELDS["height_ft"])
         if "height_in" not in st.session_state:
-            st.session_state["height_in"] = user_profile.get("height_in", 6)
+            st.session_state["height_in"] = user_profile.get("height_in", FORM_FIELDS["height_in"])
 
         st.write("Height")
         col1, col2 = st.columns(2)
@@ -108,18 +112,15 @@ def personal_info_form(user_profile, user_status):
         # Weight - editable for both new and returning users
         weight_input = st.text_input(
             "Weight (in lbs)", 
-            value=str(user_profile.get("weight_lbs", "")), 
             key="weight_lbs"
         )
         
         st.write("")
         
         # Sex - disabled for returning users
-        sex_options = ('Male', 'Female')
         sex = st.radio(
             "Biological Sex", 
-            sex_options, 
-            index=sex_options.index(user_profile.get("sex", "Male")), 
+            ('Male', 'Female'), 
             disabled=is_returning_user, 
             key="sex"
         )

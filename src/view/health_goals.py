@@ -1,4 +1,5 @@
 import streamlit as st
+from src.config.form_defaults import FORM_FIELDS
 
 def health_goals_form(user_profile):
     """Renders the health goals section of the form."""
@@ -10,9 +11,17 @@ def health_goals_form(user_profile):
             "Strengthen Bones", "Improve Mood & Focus", "Other"
         ]
         
-        # Limit multiselect to 2 options
+        # Initialize session state for health goals
         if 'health_goals' not in st.session_state:
-            st.session_state.health_goals = user_profile.get("health_goals", [])
+            st.session_state.health_goals = user_profile.get("health_goals", FORM_FIELDS["health_goals"])
+        
+        # Initialize session state for interested supplements
+        if "interested_supplements" not in st.session_state:
+            stored_supplements = user_profile.get("interested_supplements", [])
+            if isinstance(stored_supplements, list):
+                st.session_state.interested_supplements = ", ".join(stored_supplements)
+            else:
+                st.session_state.interested_supplements = str(stored_supplements)
 
         def limit_multiselect():
             if len(st.session_state.health_goals) > 2:
@@ -34,7 +43,6 @@ def health_goals_form(user_profile):
 
         interested_supplements = st.text_area(
             "Are there any specific vitamins or supplements you are interested in?",
-            value=", ".join(user_profile.get("interested_supplements", [])),
             placeholder="e.g., Vitamin D, Probiotics, Turmeric. Please separate each with a comma.",
             key="interested_supplements"
         )

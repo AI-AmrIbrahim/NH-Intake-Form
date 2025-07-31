@@ -17,6 +17,8 @@ def personal_info_form(user_profile, user_status):
             st.session_state.first_name = user_profile.get("first_name", FORM_FIELDS["first_name"])
         if "last_name" not in st.session_state:
             st.session_state.last_name = user_profile.get("last_name", FORM_FIELDS["last_name"])
+        if "phone_number" not in st.session_state:
+            st.session_state.phone_number = user_profile.get("phone_number", FORM_FIELDS["phone_number"])
         if "weight_lbs" not in st.session_state:
             st.session_state.weight_lbs = str(user_profile.get("weight_lbs", FORM_FIELDS["weight_lbs"]))
         if "sex" not in st.session_state:
@@ -44,6 +46,13 @@ def personal_info_form(user_profile, user_status):
                 disabled=is_returning_user, 
                 key="last_name"
             )
+
+        # Phone Number
+        phone_number_input = st.text_input(
+            "Phone Number",
+            disabled=is_returning_user,
+            key="phone_number"
+        )
 
         # Date of Birth
         st.write("Date of Birth")
@@ -129,6 +138,7 @@ def personal_info_form(user_profile, user_status):
             "email": email_input,
             "first_name": first_name_input,
             "last_name": last_name_input,
+            "phone_number": phone_number_input,
             "dob": dob,
             "height_ft": height_ft,
             "height_in": height_in,

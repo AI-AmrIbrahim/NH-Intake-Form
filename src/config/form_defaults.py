@@ -2,6 +2,7 @@ FORM_FIELDS = {
     "first_name": "",
     "last_name": "",
     "email": "",
+    "phone_number": "",
     "dob_month": "January",
     "dob_day": 1,
     "dob_year": 1990,

@@ -1,5 +1,6 @@
 import streamlit as st
 import datetime
+import json
 from src.utils.file_utils import get_base64_of_bin_file
 from src.utils.session_utils import clear_form
 from src.utils.style_utils import inject_css
@@ -9,6 +10,9 @@ from src.view.medical_history import medical_history_form
 from src.view.medications_allergies import medications_allergies_form
 from src.view.health_goals import health_goals_form
 from src.view.additional_info import additional_info_form
+from src.utils.db_utils import init_connection, save_profile, load_profile_from_db
+
+supabase = init_connection()
 
 def main():
     """
@@ -71,7 +75,7 @@ def main():
     # Ensure user_profile is initialized in session_state
     if 'user_profile' not in st.session_state:
         st.session_state.user_profile = {
-            "first_name": "", "last_name": "", "email": "", "dob": None, "sex": "Male", "height_m": "", "weight_kg": "",
+            "first_name": "", "last_name": "", "email": "", "phone_number": "", "dob": None, "sex": "Male", "height_m": "", "weight_kg": "",
             "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
             "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
             "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
@@ -83,7 +87,7 @@ def main():
         with st.container(border=True):
             email_input = st.text_input("Enter your email to load your profile:", key="load_email")
             if st.button("Load Profile", key="load_profile"):
-                profile = load_profile_from_db(email_input)
+                profile = load_profile_from_db(supabase, email_input)
                 if profile:
                     # Convert metric height/weight from DB to imperial for display
                     if profile.get("height_m"):
@@ -132,6 +136,7 @@ def main():
                 "first_name": personal_info["first_name"],
                 "last_name": personal_info["last_name"],
                 "email": personal_info["email"],
+                "phone_number": personal_info["phone_number"],
                 "dob": personal_info["dob"].isoformat() if personal_info["dob"] else None,
                 "sex": personal_info["sex"],
                 "height_m": height_m,
@@ -143,19 +148,17 @@ def main():
                 "sleep_quality": lifestyle["sleep_quality"],
                 "stress_level": lifestyle["stress_level"],
                 "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
-                "medical_conditions": [c.strip() for c in medical_history["medical_conditions"].split(',') if c.strip()],
-                "current_medications": [m.strip() for m in medications_allergies["medications"].split(',') if m.strip()],
-                "natural_supplements": [ns.strip() for ns in medications_allergies["natural_supplements"].split(',') if ns.strip()],
-                "allergies": [a.strip() for a in medications_allergies["allergies"].split(',') if a.strip()],
-                "health_goals": health_goals["health_goals"],
+                "medical_conditions": medical_history["medical_conditions"],
+                "current_medications": medications_allergies["medications"],
+                "natural_supplements": medications_allergies["natural_supplements"],
+                "allergies": medications_allergies["allergies"],
+                "health_goals": ", ".join(health_goals["health_goals"]),
                 "other_health_goal": health_goals["other_health_goal"],
-                "interested_supplements": [s.strip() for s in health_goals["interested_supplements"].split(',') if s.strip()],
+                "interested_supplements": health_goals["interested_supplements"],
                 "additional_info": additional_info["additional_info"]
             }
             
-            # Save the profile using email as the key
-            profiles[personal_info["email"]] = user_data
-            # save_profiles(profiles)
+            save_profile(supabase, user_data)
 
             st.success(f"Profile for {personal_info['first_name']} {personal_info['last_name']} saved! We're analyzing your profile...")
             

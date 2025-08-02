@@ -89,16 +89,65 @@ def main():
             if st.button("Load Profile", key="load_profile"):
                 profile = load_profile_from_db(supabase, email_input)
                 if profile:
-                    # Convert metric height/weight from DB to imperial for display
+                    # Clear existing form state before loading new profile
+                    clear_form()
+                    st.session_state.user_profile = profile
+
+                    # Populate session state for all form fields from the loaded profile
+                    # Personal Info
+                    st.session_state.email = profile.get("email", "")
+                    st.session_state.first_name = profile.get("first_name", "")
+                    st.session_state.last_name = profile.get("last_name", "")
+                    st.session_state.phone_number = profile.get("phone_number", "")
+                    user_dob = profile.get("dob")
+                    if isinstance(user_dob, str):
+                        try:
+                            user_dob = datetime.datetime.strptime(user_dob, "%Y-%m-%d").date()
+                            st.session_state.dob_year = user_dob.year
+                            st.session_state.dob_month = datetime.date(2024, user_dob.month, 1).strftime('%B')
+                            st.session_state.dob_day = user_dob.day
+                        except ValueError:
+                            pass # Keep defaults if date is invalid
+                    st.session_state.sex = profile.get("sex", "Male")
                     if profile.get("height_m"):
                         total_inches = profile["height_m"] * 39.3701
-                        profile["height_ft"] = int(total_inches // 12)
-                        profile["height_in"] = int(total_inches % 12)
+                        st.session_state.height_ft = int(total_inches // 12)
+                        st.session_state.height_in = int(total_inches % 12)
                     if profile.get("weight_kg"):
-                        profile["weight_lbs"] = round(profile["weight_kg"] * 2.20462, 2)
+                        st.session_state.weight_lbs = str(round(profile["weight_kg"] * 2.20462, 2))
 
-                    st.session_state.user_profile = profile
+                    # Lifestyle
+                    st.session_state.physical_activity = profile.get("physical_activity", "3-4 days")
+                    st.session_state.energy_level = profile.get("energy_level", "Neutral")
+                    st.session_state.diet = profile.get("diet", "I don't follow a specific diet")
+                    st.session_state.meals_per_day = profile.get("meals_per_day", "3")
+                    st.session_state.sleep_quality = profile.get("sleep_quality", "Good")
+                    st.session_state.stress_level = profile.get("stress_level", "Moderate")
+
+                    # Medical History
+                    st.session_state.pregnant_or_breastfeeding = profile.get("pregnant_or_breastfeeding", "Not Applicable")
+                    medical_conditions = profile.get("medical_conditions", [])
+                    st.session_state.medical_conditions = ", ".join(medical_conditions) if isinstance(medical_conditions, list) else str(medical_conditions)
+
+                    # Medications & Allergies
+                    medications = profile.get("current_medications", [])
+                    st.session_state.medications = ", ".join(medications) if isinstance(medications, list) else str(medications)
+                    natural_supplements = profile.get("natural_supplements", [])
+                    st.session_state.natural_supplements = ", ".join(natural_supplements) if isinstance(natural_supplements, list) else str(natural_supplements)
+                    allergies = profile.get("allergies", [])
+                    st.session_state.allergies = ", ".join(allergies) if isinstance(allergies, list) else str(allergies)
+
+                    # Health Goals
+                    st.session_state.health_goals = profile.get("health_goals", [])
+                    st.session_state.other_health_goal = profile.get("other_health_goal", "")
+                    interested_supplements = profile.get("interested_supplements", [])
+                    st.session_state.interested_supplements = ", ".join(interested_supplements) if isinstance(interested_supplements, list) else str(interested_supplements)
+
+                    # Additional Info
+                    st.session_state.additional_info = profile.get("additional_info", "")
+
                     st.success("Profile loaded successfully!")
+                    st.rerun()
                 else:
                     st.error("Profile not found. Please check the email or create a new profile.")
 

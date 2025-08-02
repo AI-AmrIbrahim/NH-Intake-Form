@@ -23,6 +23,10 @@ def health_goals_form(user_profile):
             else:
                 st.session_state.interested_supplements = str(stored_supplements)
 
+        # Initialize session state for other_health_goal
+        if "other_health_goal" not in st.session_state:
+            st.session_state.other_health_goal = user_profile.get("other_health_goal", "")
+
         def limit_multiselect():
             if len(st.session_state.health_goals) > 2:
                 st.session_state.health_goals = st.session_state.health_goals[:2]
@@ -38,7 +42,7 @@ def health_goals_form(user_profile):
         if "Other" in health_goals:
             other_health_goal = st.text_input(
                 "Please specify your other health goal:",
-                value=user_profile.get("other_health_goal", "")
+                key="other_health_goal"
             )
 
         interested_supplements = st.text_area(

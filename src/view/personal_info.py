@@ -7,10 +7,9 @@ def personal_info_form(user_profile, user_status):
     with st.container(border=True):
         st.header("👤 Personal Information")
         
-        # Determine if user is returning (for cleaner code)
         is_returning_user = user_status != "No, I have not filled out the intake form before"
 
-        # Initialize session state for all fields
+        # Initialize session state for all fields if they don't exist
         if "email" not in st.session_state:
             st.session_state.email = user_profile.get("email", FORM_FIELDS["email"])
         if "first_name" not in st.session_state:
@@ -23,6 +22,10 @@ def personal_info_form(user_profile, user_status):
             st.session_state.weight_lbs = str(user_profile.get("weight_lbs", FORM_FIELDS["weight_lbs"]))
         if "sex" not in st.session_state:
             st.session_state.sex = user_profile.get("sex", FORM_FIELDS["sex"])
+        if "height_ft" not in st.session_state:
+            st.session_state.height_ft = user_profile.get("height_ft", FORM_FIELDS["height_ft"])
+        if "height_in" not in st.session_state:
+            st.session_state.height_in = user_profile.get("height_in", FORM_FIELDS["height_in"])
 
         # Email
         email_input = st.text_input(
@@ -59,25 +62,13 @@ def personal_info_form(user_profile, user_status):
         today = datetime.date.today()
         month_names = [datetime.date(2024, i, 1).strftime('%B') for i in range(1, 13)]
 
-        # Load DOB from profile if it exists
-        user_dob = user_profile.get("dob")
-        if isinstance(user_dob, str):
-            try:
-                user_dob = datetime.datetime.strptime(user_dob, "%Y-%m-%d").date()
-            except ValueError:
-                user_dob = None
-
-        initial_year = user_dob.year if user_dob else FORM_FIELDS["dob_year"]
-        initial_month_index = user_dob.month - 1 if user_dob else 0
-        initial_day_index = user_dob.day - 1 if user_dob else 0
-
         # Set defaults in session state if not already set
         if "dob_year" not in st.session_state:
-            st.session_state.dob_year = initial_year
+            st.session_state.dob_year = FORM_FIELDS["dob_year"]
         if "dob_month" not in st.session_state:
-            st.session_state.dob_month = month_names[initial_month_index]
+            st.session_state.dob_month = month_names[0]
         if "dob_day" not in st.session_state:
-            st.session_state.dob_day = initial_day_index + 1
+            st.session_state.dob_day = 1
 
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -106,11 +97,6 @@ def personal_info_form(user_profile, user_status):
             dob = None
 
         # Height - editable for both new and returning users
-        if "height_ft" not in st.session_state:
-            st.session_state["height_ft"] = user_profile.get("height_ft", FORM_FIELDS["height_ft"])
-        if "height_in" not in st.session_state:
-            st.session_state["height_in"] = user_profile.get("height_in", FORM_FIELDS["height_in"])
-
         st.write("Height")
         col1, col2 = st.columns(2)
         with col1:

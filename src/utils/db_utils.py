@@ -11,18 +11,20 @@ def init_connection() -> Client:
     return create_client(url, key)
 
 def save_profile(supabase: Client, user_data: dict):
-    """Save user profile to the database."""
+    """Save user profile to the database as a new entry."""
     try:
-        response = supabase.table('user_profiles').upsert(user_data).execute()
+        # Use insert to create a new record every time
+        response = supabase.table('user_profiles').insert(user_data).execute()
         return response
     except Exception as e:
         print(f"Error saving profile: {e}")
         return None
 
 def load_profile_from_db(supabase: Client, email: str):
-    """Load user profile from the database."""
+    """Load the most recent user profile from the database based on email."""
     try:
-        response = supabase.table('user_profiles').select('*').eq('email', email).execute()
+        # Fetch the most recent profile by ordering by created_at descending
+        response = supabase.table('user_profiles').select('*').eq('email', email).order('created_at', desc=True).limit(1).execute()
         if response.data:
             return response.data[0]
         return None

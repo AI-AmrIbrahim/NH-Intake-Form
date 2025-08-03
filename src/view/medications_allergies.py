@@ -8,7 +8,7 @@ def medications_allergies_form(user_profile):
         
         # Initialize session state for medications
         if "medications" not in st.session_state:
-            stored_medications = user_profile.get("medications", FORM_FIELDS["medications"])
+            stored_medications = user_profile.get("medications", FORM_FIELDS.get("medications", []))
             if isinstance(stored_medications, list):
                 st.session_state.medications = ", ".join(stored_medications)
             else:
@@ -16,7 +16,7 @@ def medications_allergies_form(user_profile):
         
         # Initialize session state for natural supplements
         if "natural_supplements" not in st.session_state:
-            stored_supplements = user_profile.get("natural_supplements", FORM_FIELDS["natural_supplements"])
+            stored_supplements = user_profile.get("natural_supplements", FORM_FIELDS.get("natural_supplements", []))
             if isinstance(stored_supplements, list):
                 st.session_state.natural_supplements = ", ".join(stored_supplements)
             else:
@@ -24,7 +24,7 @@ def medications_allergies_form(user_profile):
         
         # Initialize session state for allergies
         if "allergies" not in st.session_state:
-            stored_allergies = user_profile.get("allergies", FORM_FIELDS["allergies"])
+            stored_allergies = user_profile.get("allergies", FORM_FIELDS.get("allergies", []))
             if isinstance(stored_allergies, list):
                 st.session_state.allergies = ", ".join(stored_allergies)
             else:

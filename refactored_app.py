@@ -86,19 +86,71 @@ def main():
     if user_status == "Yes, I have filled out the intake form before":
         with st.container(border=True):
             email_input = st.text_input("Enter your email to load your profile:", key="load_email")
+            # Replace the profile loading section in your refactored_app.py with this:
+
             if st.button("Load Profile", key="load_profile"):
                 profile = load_profile_from_db(supabase, email_input)
                 if profile:
                     # Clear existing form state before loading new profile
                     clear_form()
-                    st.session_state.user_profile = profile
+                    
+                    # Helper function to clean list-like data from the database
+                    def clean_profile_list_field(data, as_list=False):
+                        """
+                        Clean and format profile list fields from database.
+                        Returns either a list or comma-separated string based on as_list parameter.
+                        """
+                        if not data:
+                            return [] if as_list else ""
 
-                    # Populate session state for all form fields from the loaded profile
+                        # Handle string data that might be JSON
+                        if isinstance(data, str):
+                            # Try to parse JSON if it looks like a list
+                            if data.strip().startswith('[') and data.strip().endswith(']'):
+                                try:
+                                    data = json.loads(data)
+                                except (json.JSONDecodeError, TypeError):
+                                    # If JSON parsing fails, treat as comma-separated string
+                                    data = [item.strip() for item in data.split(',') if item.strip()]
+                            else:
+                                # Treat as comma-separated string
+                                data = [item.strip() for item in data.split(',') if item.strip()]
+
+                        # Handle list data
+                        if isinstance(data, list):
+                            cleaned_items = []
+                            for item in data:
+                                if isinstance(item, str):
+                                    # Remove any quotes and extra whitespace
+                                    clean_item = item.strip().strip('"').strip("'").strip()
+                                    if clean_item:
+                                        cleaned_items.append(clean_item)
+                                else:
+                                    # Convert non-string items to string
+                                    clean_item = str(item).strip()
+                                    if clean_item:
+                                        cleaned_items.append(clean_item)
+                            
+                            if as_list:
+                                return cleaned_items
+                            else:
+                                return ", ".join(cleaned_items)
+
+                        # Handle single values
+                        clean_data = str(data).strip().strip('"').strip("'").strip()
+                        if as_list:
+                            return [clean_data] if clean_data else []
+                        else:
+                            return clean_data
+
+                    # --- Populate session_state directly for form widgets ---
+                    
                     # Personal Info
-                    st.session_state.email = profile.get("email", "")
-                    st.session_state.first_name = profile.get("first_name", "")
-                    st.session_state.last_name = profile.get("last_name", "")
-                    st.session_state.phone_number = profile.get("phone_number", "")
+                    st.session_state.email = str(profile.get("email", ""))
+                    st.session_state.first_name = str(profile.get("first_name", ""))
+                    st.session_state.last_name = str(profile.get("last_name", ""))
+                    st.session_state.phone_number = str(profile.get("phone_number", ""))
+                    
                     user_dob = profile.get("dob")
                     if isinstance(user_dob, str):
                         try:
@@ -107,50 +159,74 @@ def main():
                             st.session_state.dob_month = datetime.date(2024, user_dob.month, 1).strftime('%B')
                             st.session_state.dob_day = user_dob.day
                         except ValueError:
-                            pass # Keep defaults if date is invalid
-                    st.session_state.sex = profile.get("sex", "Male")
+                            pass
+                    
+                    st.session_state.sex = str(profile.get("sex", "Male"))
+                    
                     if profile.get("height_m"):
-                        total_inches = profile["height_m"] * 39.3701
-                        st.session_state.height_ft = int(total_inches // 12)
-                        st.session_state.height_in = int(total_inches % 12)
+                        try:
+                            total_inches = float(profile["height_m"]) * 39.3701
+                            st.session_state.height_ft = int(total_inches // 12)
+                            st.session_state.height_in = int(total_inches % 12)
+                        except (ValueError, TypeError):
+                            pass
+                    
                     if profile.get("weight_kg"):
-                        st.session_state.weight_lbs = str(round(profile["weight_kg"] * 2.20462, 2))
+                        try:
+                            st.session_state.weight_lbs = str(round(float(profile["weight_kg"]) * 2.20462, 2))
+                        except (ValueError, TypeError):
+                            pass
 
                     # Lifestyle
-                    st.session_state.physical_activity = profile.get("physical_activity", "3-4 days")
-                    st.session_state.energy_level = profile.get("energy_level", "Neutral")
-                    st.session_state.diet = profile.get("diet", "I don't follow a specific diet")
-                    st.session_state.meals_per_day = profile.get("meals_per_day", "3")
-                    st.session_state.sleep_quality = profile.get("sleep_quality", "Good")
-                    st.session_state.stress_level = profile.get("stress_level", "Moderate")
+                    st.session_state.physical_activity = str(profile.get("physical_activity", "3-4 days"))
+                    st.session_state.energy_level = str(profile.get("energy_level", "Neutral"))
+                    st.session_state.diet = str(profile.get("diet", "I don't follow a specific diet"))
+                    st.session_state.meals_per_day = str(profile.get("meals_per_day", "3"))
+                    st.session_state.sleep_quality = str(profile.get("sleep_quality", "Good"))
+                    st.session_state.stress_level = str(profile.get("stress_level", "Moderate"))
 
-                    # Medical History
-                    st.session_state.pregnant_or_breastfeeding = profile.get("pregnant_or_breastfeeding", "Not Applicable")
-                    medical_conditions = profile.get("medical_conditions", [])
-                    st.session_state.medical_conditions = ", ".join(medical_conditions) if isinstance(medical_conditions, list) else str(medical_conditions)
+                    # Medical History - ENSURE STRINGS FOR TEXT WIDGETS
+                    st.session_state.pregnant_or_breastfeeding = str(profile.get("pregnant_or_breastfeeding", "Not Applicable"))
+                    
+                    # Clean and ensure string format for text areas
+                    medical_conditions_raw = profile.get("medical_conditions")
+                    medical_conditions_cleaned = clean_profile_list_field(medical_conditions_raw, as_list=False)
+                    st.session_state.medical_conditions = str(medical_conditions_cleaned) if medical_conditions_cleaned else ""
 
-                    # Medications & Allergies
-                    medications = profile.get("current_medications", [])
-                    st.session_state.medications = ", ".join(medications) if isinstance(medications, list) else str(medications)
-                    natural_supplements = profile.get("natural_supplements", [])
-                    st.session_state.natural_supplements = ", ".join(natural_supplements) if isinstance(natural_supplements, list) else str(natural_supplements)
-                    allergies = profile.get("allergies", [])
-                    st.session_state.allergies = ", ".join(allergies) if isinstance(allergies, list) else str(allergies)
+                    # Medications & Allergies - ENSURE STRINGS FOR TEXT WIDGETS
+                    medications_raw = profile.get("current_medications")
+                    medications_cleaned = clean_profile_list_field(medications_raw, as_list=False)
+                    st.session_state.medications = str(medications_cleaned) if medications_cleaned else ""
+                    
+                    natural_supplements_raw = profile.get("natural_supplements")
+                    natural_supplements_cleaned = clean_profile_list_field(natural_supplements_raw, as_list=False)
+                    st.session_state.natural_supplements = str(natural_supplements_cleaned) if natural_supplements_cleaned else ""
+                    
+                    allergies_raw = profile.get("allergies")
+                    allergies_cleaned = clean_profile_list_field(allergies_raw, as_list=False)
+                    st.session_state.allergies = str(allergies_cleaned) if allergies_cleaned else ""
 
-                    # Health Goals
-                    st.session_state.health_goals = profile.get("health_goals", [])
-                    st.session_state.other_health_goal = profile.get("other_health_goal", "")
-                    interested_supplements = profile.get("interested_supplements", [])
-                    st.session_state.interested_supplements = ", ".join(interested_supplements) if isinstance(interested_supplements, list) else str(interested_supplements)
+                    # Health Goals - KEEP AS LIST FOR MULTISELECT
+                    health_goals_raw = profile.get("health_goals")
+                    st.session_state.health_goals = clean_profile_list_field(health_goals_raw, as_list=True)
+                    
+                    st.session_state.other_health_goal = str(profile.get("other_health_goal", ""))
+                    
+                    interested_supplements_raw = profile.get("interested_supplements")
+                    interested_supplements_cleaned = clean_profile_list_field(interested_supplements_raw, as_list=False)
+                    st.session_state.interested_supplements = str(interested_supplements_cleaned) if interested_supplements_cleaned else ""
 
-                    # Additional Info
-                    st.session_state.additional_info = profile.get("additional_info", "")
-
+                    # Additional Info - ENSURE STRING FOR TEXT AREA
+                    additional_info_raw = profile.get("additional_info", "")
+                    st.session_state.additional_info = str(additional_info_raw) if additional_info_raw else ""
+                    
+                    # Also update the user_profile object for consistency
+                    st.session_state.user_profile = profile
+                    
                     st.success("Profile loaded successfully!")
                     st.rerun()
                 else:
                     st.error("Profile not found. Please check the email or create a new profile.")
-
 
     # --- Form Questions ---
     personal_info = personal_info_form(user_profile, user_status)
@@ -162,9 +238,16 @@ def main():
 
     # --- Submission ---
     st.write("---")
+
+    # Determine button text based on user status
+    if user_status == "Yes, I have filled out the intake form before":
+        submit_button_text = "**Update My Profile**"
+    else:
+        submit_button_text = "**Create My Profile**"
+
     col1, col2 = st.columns(2)
     with col1:
-        submitted = st.button("**Create My Profile**", use_container_width=True, key="create_profile")
+        submitted = st.button(submit_button_text, use_container_width=True, key="create_profile")
     with col2:
         st.button("Clear Form", on_click=clear_form, use_container_width=True, key="clear_form")
 
@@ -197,13 +280,13 @@ def main():
                 "sleep_quality": lifestyle["sleep_quality"],
                 "stress_level": lifestyle["stress_level"],
                 "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
-                "medical_conditions": medical_history["medical_conditions"],
-                "current_medications": medications_allergies["medications"],
-                "natural_supplements": medications_allergies["natural_supplements"],
-                "allergies": medications_allergies["allergies"],
-                "health_goals": ", ".join(health_goals["health_goals"]),
+                "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
+                "current_medications": [s.strip() for s in medications_allergies["medications"].split(',') if s.strip()],
+                "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
+                "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
+                "health_goals": health_goals["health_goals"],
                 "other_health_goal": health_goals["other_health_goal"],
-                "interested_supplements": health_goals["interested_supplements"],
+                "interested_supplements": [s.strip() for s in health_goals["interested_supplements"].split(',') if s.strip()],
                 "additional_info": additional_info["additional_info"]
             }
             

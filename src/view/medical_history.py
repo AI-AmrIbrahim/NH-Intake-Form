@@ -8,7 +8,7 @@ def medical_history_form(user_profile, sex):
         
         # Initialize session state for medical conditions
         if "medical_conditions" not in st.session_state:
-            stored_conditions = user_profile.get("medical_conditions", FORM_FIELDS["medical_conditions"])
+            stored_conditions = user_profile.get("medical_conditions", FORM_FIELDS.get("medical_conditions", []))
             if isinstance(stored_conditions, list):
                 st.session_state.medical_conditions = ", ".join(stored_conditions)
             else:
@@ -18,7 +18,7 @@ def medical_history_form(user_profile, sex):
         if sex == 'Female':
             # Initialize session state for pregnant_or_breastfeeding
             if "pregnant_or_breastfeeding" not in st.session_state:
-                stored_pob = user_profile.get("pregnant_or_breastfeeding", FORM_FIELDS["pregnant_or_breastfeeding"])
+                stored_pob = user_profile.get("pregnant_or_breastfeeding", FORM_FIELDS.get("pregnant_or_breastfeeding", "No"))
                 pob_options = ('No', 'Yes')
                 if stored_pob not in pob_options:
                     stored_pob = "No"

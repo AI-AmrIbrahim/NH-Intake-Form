@@ -1,5 +1,4 @@
 import streamlit as st
-import datetime
 from src.config.form_defaults import FORM_FIELDS
 
 def initialize_session_state():
@@ -19,9 +18,7 @@ def clear_form():
     user_status = st.session_state.get("user_status")
 
     personal_info_keys = [
-        "first_name", "last_name", "email", 
-        "dob_month", "dob_day", "dob_year", "sex",
-        "load_email"
+        "first_name", "last_name", "email", "phone_number", "dob_month", "dob_day", "dob_year", "sex", "load_email"
     ]
 
     for key, default_value in FORM_FIELDS.items():

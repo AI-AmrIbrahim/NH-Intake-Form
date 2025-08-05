@@ -1,7 +1,7 @@
 import streamlit as st
 from src.config.form_defaults import FORM_FIELDS
 
-def medications_allergies_form(user_profile):
+def medications_allergies_form(user_profile, errors):
     """Renders the medications and allergies section of the form."""
     with st.container(border=True):
         st.header("💊 Medications & Allergies")
@@ -35,18 +35,24 @@ def medications_allergies_form(user_profile):
             placeholder="e.g., Ibuprofen, Aspirin, Atorvastatin, Amlodipine, Metformin. Please separate each with a comma.",
             key="medications"
         )
+        if "medications" in errors:
+            st.error(errors["medications"])
         
         natural_supplements = st.text_area(
             "Please list any natural supplements you are currently taking.",
             placeholder="e.g., Melatonin, St. John's Wort, Fish Oil. Please separate each with a comma.",
             key="natural_supplements"
         )
+        if "natural_supplements" in errors:
+            st.error(errors["natural_supplements"])
         
         allergies = st.text_area(
             "Please list any known allergies.",
             placeholder="e.g., Peanuts, Penicillin, Sulfa. Please separate each with a comma.",
             key="allergies"
         )
+        if "allergies" in errors:
+            st.error(errors["allergies"])
 
         return {
             "medications": medications,

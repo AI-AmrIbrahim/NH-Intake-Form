@@ -11,6 +11,8 @@ from src.view.medications_allergies import medications_allergies_form
 from src.view.health_goals import health_goals_form
 from src.view.additional_info import additional_info_form
 from src.utils.db_utils import init_connection, save_profile, load_profile_from_db
+from src.models.user_profile import UserProfile
+from pydantic import ValidationError
 
 supabase = init_connection()
 
@@ -81,7 +83,11 @@ def main():
             "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
             "interested_supplements": [], "additional_info": ""
         }
+    if 'errors' not in st.session_state:
+        st.session_state.errors = {}
+
     user_profile = st.session_state.user_profile
+    errors = st.session_state.errors
 
     if user_status == "Yes, I have filled out the intake form before":
         with st.container(border=True):
@@ -229,12 +235,12 @@ def main():
                     st.error("Profile not found. Please check the email or create a new profile.")
 
     # --- Form Questions ---
-    personal_info = personal_info_form(user_profile, user_status)
-    lifestyle = lifestyle_form(user_profile)
-    medical_history = medical_history_form(user_profile, personal_info["sex"])
-    medications_allergies = medications_allergies_form(user_profile)
-    health_goals = health_goals_form(user_profile)
-    additional_info = additional_info_form(user_profile)
+    personal_info = personal_info_form(user_profile, user_status, errors)
+    lifestyle = lifestyle_form(user_profile, errors)
+    medical_history = medical_history_form(user_profile, personal_info["sex"], errors)
+    medications_allergies = medications_allergies_form(user_profile, errors)
+    health_goals = health_goals_form(user_profile, errors)
+    additional_info = additional_info_form(user_profile, errors)
 
     # --- Submission ---
     st.write("---")
@@ -252,16 +258,15 @@ def main():
         st.button("Clear Form", on_click=clear_form, use_container_width=True, key="clear_form")
 
     if submitted:
-        if not personal_info["email"]:
-            st.error("Please enter your email to save or retrieve your profile.")
-        else:
+        st.session_state.errors = {}
+        try:
             # Convert imperial height to metric
             height_m = (personal_info["height_ft"] * 12 + personal_info["height_in"]) * 0.0254
 
             # Convert weight from lbs to kg
             try:
                 weight_kg = float(personal_info["weight_lbs"]) * 0.453592
-            except ValueError:
+            except (ValueError, TypeError):
                 weight_kg = 0 # Or handle error appropriately
 
             user_data = {
@@ -271,8 +276,9 @@ def main():
                 "phone_number": personal_info["phone_number"],
                 "dob": personal_info["dob"].isoformat() if personal_info["dob"] else None,
                 "sex": personal_info["sex"],
-                "height_m": height_m,
-                "weight_kg": weight_kg,
+                "height_ft": personal_info["height_ft"],
+                "height_in": personal_info["height_in"],
+                "weight_lbs": personal_info["weight_lbs"],
                 "physical_activity": lifestyle["physical_activity"],
                 "energy_level": lifestyle["energy_level"],
                 "diet": lifestyle["diet"],
@@ -290,9 +296,28 @@ def main():
                 "additional_info": additional_info["additional_info"]
             }
             
-            save_profile(supabase, user_data)
+            user_profile = UserProfile(**user_data)
+            save_profile(supabase, user_profile.dict())
 
             st.success(f"Profile for {personal_info['first_name']} {personal_info['last_name']} saved! We're analyzing your profile...")
-            
+            st.session_state.errors = {}
+
+        except ValidationError as e:
+            st.session_state.errors = {err['loc'][0]: err['msg'] for err in e.errors()}
+            st.rerun()
+
+    if errors:
+        st.components.v1.html(
+            """
+            <script>
+            const errorElements = window.parent.document.querySelectorAll('.st-emotion-cache-1vzeuhh');
+            if (errorElements.length > 0) {
+                errorElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            </script>
+            """,
+            height=0
+        )
+
 if __name__ == "__main__":
     main()

@@ -1,7 +1,7 @@
 import streamlit as st
 from src.config.form_defaults import FORM_FIELDS
 
-def additional_info_form(user_profile):
+def additional_info_form(user_profile, errors):
     """Renders the additional information section of the form."""
     with st.container(border=True):
         st.header("📝 Additional Information")
@@ -15,6 +15,8 @@ def additional_info_form(user_profile):
             placeholder="e.g., Previous sports injuries, aches, pains, depression, anxiety, etc.",
             key="additional_info"
         )
+        if "additional_info" in errors:
+            st.error(errors["additional_info"])
 
         return {
             "additional_info": additional_info

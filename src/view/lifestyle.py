@@ -1,7 +1,7 @@
 import streamlit as st
 from src.config.form_defaults import FORM_FIELDS
 
-def lifestyle_form(user_profile):
+def lifestyle_form(user_profile, errors):
     """Renders the lifestyle section of the form."""
     with st.container(border=True):
         st.header("🏃 Lifestyle")
@@ -26,12 +26,16 @@ def lifestyle_form(user_profile):
             activity_options,
             key="physical_activity"
         )
+        if "physical_activity" in errors:
+            st.error(errors["physical_activity"])
         
         energy_level = st.select_slider(
             "How would you rate your energy on a typical day?",
             options=["Very Low", "Low", "Neutral", "High", "Very High"],
             key="energy_level"
         )
+        if "energy_level" in errors:
+            st.error(errors["energy_level"])
         
         diet_options = ["Clean/Whole food", "High Protein", "Plant-based", "Low carb/keto", "Fast-food often", "I don't follow a specific diet"]
         diet = st.selectbox(
@@ -39,24 +43,32 @@ def lifestyle_form(user_profile):
             diet_options,
             key="diet"
         )
+        if "diet" in errors:
+            st.error(errors["diet"])
         
         meals_per_day = st.selectbox(
             "How many meals do you typically eat per day?",
             ["1", "2", "3", "More than 3"],
             key="meals_per_day"
         )
+        if "meals_per_day" in errors:
+            st.error(errors["meals_per_day"])
         
         sleep_quality = st.select_slider(
             "How would you rate your overall sleep quality?",
             options=["Poor", "Fair", "Good", "Excellent"],
             key="sleep_quality"
         )
+        if "sleep_quality" in errors:
+            st.error(errors["sleep_quality"])
         
         stress_level = st.select_slider(
             "How would you rate your average daily stress level?",
             options=["Low", "Moderate", "High"],
             key="stress_level"
         )
+        if "stress_level" in errors:
+            st.error(errors["stress_level"])
 
         return {
             "physical_activity": physical_activity,

@@ -1,7 +1,7 @@
 import streamlit as st
 from src.config.form_defaults import FORM_FIELDS
 
-def health_goals_form(user_profile):
+def health_goals_form(user_profile, errors):
     """Renders the health goals section of the form."""
     with st.container(border=True):
         st.header("🎯 Health Goals")
@@ -37,6 +37,8 @@ def health_goals_form(user_profile):
             key="health_goals",
             on_change=limit_multiselect
         )
+        if "health_goals" in errors:
+            st.error(errors["health_goals"])
 
         other_health_goal = ""
         if "Other" in health_goals:
@@ -44,12 +46,16 @@ def health_goals_form(user_profile):
                 "Please specify your other health goal:",
                 key="other_health_goal"
             )
+            if "other_health_goal" in errors:
+                st.error(errors["other_health_goal"])
 
         interested_supplements = st.text_area(
             "Are there any specific vitamins or supplements you are interested in?",
             placeholder="e.g., Vitamin D, Probiotics, Turmeric. Please separate each with a comma.",
             key="interested_supplements"
         )
+        if "interested_supplements" in errors:
+            st.error(errors["interested_supplements"])
 
         return {
             "health_goals": health_goals,

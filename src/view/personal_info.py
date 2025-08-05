@@ -2,7 +2,7 @@ import streamlit as st
 import datetime
 from src.config.form_defaults import FORM_FIELDS
 
-def personal_info_form(user_profile, user_status):
+def personal_info_form(user_profile, user_status, errors):
     """Renders the personal information section of the form."""
     with st.container(border=True):
         st.header("👤 Personal Information")
@@ -33,6 +33,8 @@ def personal_info_form(user_profile, user_status):
             disabled=is_returning_user, 
             key="email"
         )
+        if "email" in errors:
+            st.error(errors["email"])
         
         # Name
         st.write("Name")
@@ -43,12 +45,16 @@ def personal_info_form(user_profile, user_status):
                 disabled=is_returning_user, 
                 key="first_name"
             )
+            if "first_name" in errors:
+                st.error(errors["first_name"])
         with col2:
             last_name_input = st.text_input(
                 "Last Name", 
                 disabled=is_returning_user, 
                 key="last_name"
             )
+            if "last_name" in errors:
+                st.error(errors["last_name"])
 
         # Phone Number
         phone_number_input = st.text_input(
@@ -56,6 +62,8 @@ def personal_info_form(user_profile, user_status):
             disabled=is_returning_user,
             key="phone_number"
         )
+        if "phone_number" in errors:
+            st.error(errors["phone_number"])
 
         # Date of Birth
         st.write("Date of Birth")
@@ -95,20 +103,28 @@ def personal_info_form(user_profile, user_status):
         except ValueError:
             st.error("Please enter a valid date of birth.")
             dob = None
+        if "dob" in errors:
+            st.error(errors["dob"])
 
         # Height - editable for both new and returning users
         st.write("Height")
         col1, col2 = st.columns(2)
         with col1:
             height_ft = st.selectbox("Feet", list(range(4, 7)), key="height_ft")
+            if "height_ft" in errors:
+                st.error(errors["height_ft"])
         with col2:
             height_in = st.selectbox("Inches", list(range(0, 12)), key="height_in")
+            if "height_in" in errors:
+                st.error(errors["height_in"])
 
         # Weight - editable for both new and returning users
         weight_input = st.text_input(
             "Weight (in lbs)", 
             key="weight_lbs"
         )
+        if "weight_lbs" in errors:
+            st.error(errors["weight_lbs"])
         
         st.write("")
         

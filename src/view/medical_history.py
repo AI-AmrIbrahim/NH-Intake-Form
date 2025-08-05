@@ -1,7 +1,7 @@
 import streamlit as st
 from src.config.form_defaults import FORM_FIELDS
 
-def medical_history_form(user_profile, sex):
+def medical_history_form(user_profile, sex, errors):
     """Renders the medical history section of the form."""
     with st.container(border=True):
         st.header("⚕️ Medical History")
@@ -29,12 +29,16 @@ def medical_history_form(user_profile, sex):
                 ('No', 'Yes'),
                 key="pregnant_or_breastfeeding"
             )
+            if "pregnant_or_breastfeeding" in errors:
+                st.error(errors["pregnant_or_breastfeeding"])
         
         medical_conditions = st.text_area(
             "Please list any pre-existing medical conditions.",
             placeholder="e.g., High blood pressure, Asthma, Diabetes. Please separate each condition with a comma.",
             key="medical_conditions"
         )
+        if "medical_conditions" in errors:
+            st.error(errors["medical_conditions"])
 
         return {
             "pregnant_or_breastfeeding": pregnant_or_breastfeeding,

@@ -7,3 +7,5 @@ chromadb
 requests
 supabase
 python-dotenv
+pydantic
+pydantic[email]

@@ -23,11 +23,11 @@ def save_profile(supabase: Client, user_data: dict):
         print(f"Error saving profile: {e}")
         return None
 
-def load_profile_from_db(supabase: Client, email: str):
-    """Load the most recent user profile from the database based on email."""
+def load_profile_from_db(supabase: Client, profile_code: str):
+    """Load the most recent user profile from the database based on profile_code."""
     try:
         # Fetch the most recent profile by ordering by created_at descending
-        response = supabase.table('user_profiles').select('*').eq('email', email).order('created_at', desc=True).limit(1).execute()
+        response = supabase.table('user_profiles').select('*').eq('profile_code', profile_code).order('created_at', desc=True).limit(1).execute()
         if response.data:
             profile = response.data[0]
             
@@ -61,4 +61,22 @@ def load_profile_from_db(supabase: Client, email: str):
         return None
     except Exception as e:
         print(f"Error loading profile: {e}")
+        return None
+
+def load_profile_by_security_questions(supabase: Client, security_questions: dict):
+    """Load a user profile from the database based on security questions and answers."""
+    try:
+        response = supabase.table('user_profiles').select('*')\
+            .eq('security_question_1', security_questions['security_question_1'])\
+            .eq('security_answer_1', security_questions['security_answer_1'])\
+            .eq('security_question_2', security_questions['security_question_2'])\
+            .eq('security_answer_2', security_questions['security_answer_2'])\
+            .eq('security_question_3', security_questions['security_question_3'])\
+            .eq('security_answer_3', security_questions['security_answer_3'])\
+            .order('created_at', desc=True).limit(1).execute()
+        if response.data:
+            return response.data[0]
+        return None
+    except Exception as e:
+        print(f"Error loading profile by security questions: {e}")
         return None

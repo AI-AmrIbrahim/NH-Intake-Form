@@ -1,13 +1,15 @@
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, Field, validator, root_validator
 from typing import List, Optional, Union
 import datetime
 
 class UserProfile(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    email: EmailStr
-    phone_number: Optional[str] = None
-    dob: Optional[datetime.date] = None
+    profile_code: str
+    security_question_1: str
+    security_answer_1: str
+    security_question_2: str
+    security_answer_2: str
+    security_question_3: str
+    security_answer_3: str
     sex: Optional[str] = None
     height_ft: Optional[int] = Field(None, ge=4, le=7)
     height_in: Optional[int] = Field(None, ge=0, le=11)
@@ -28,27 +30,29 @@ class UserProfile(BaseModel):
     interested_supplements: List[str] = []
     additional_info: Optional[str] = None
 
-    @validator('first_name', 'last_name', pre=True, allow_reuse=True)
-    def validate_name(cls, v):
-        if v and not v.isalpha():
-            raise ValueError("Name must only contain letters.")
-        return v
-
-    @validator('phone_number', pre=True, allow_reuse=True)
-    def validate_phone_number(cls, v):
-        if v:
-            if not v.isdigit() or len(v) != 10:
-                raise ValueError("Please enter a valid 10-digit phone number.")
-        return v
-
-    @validator('weight_lbs', pre=True)
+    @validator('weight_lbs', pre=True, allow_reuse=True)
     def validate_weight(cls, v):
         if v is None or v == '':
             return None
         try:
             weight = float(v)
+            if weight <= 0:
+                raise ValueError('Weight must be a positive number.')
+            return weight
         except (ValueError, TypeError):
             raise ValueError('Please enter a valid number for weight.')
-        if weight <= 0:
-            raise ValueError('Weight must be a positive number.')
-        return weight
+
+    @validator('security_answer_1', 'security_answer_2', 'security_answer_3', pre=True, allow_reuse=True)
+    def validate_security_answers(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Please answer all three security questions.')
+        return v
+
+    @root_validator(pre=True)
+    def validate_unique_security_questions(cls, values):
+        q1 = values.get('security_question_1')
+        q2 = values.get('security_question_2')
+        q3 = values.get('security_question_3')
+        if len({q1, q2, q3}) != 3:
+            raise ValueError('Please select three unique security questions.')
+        return values

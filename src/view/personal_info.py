@@ -10,14 +10,6 @@ def personal_info_form(user_profile, user_status, errors):
         is_returning_user = user_status != "No, I have not filled out the intake form before"
 
         # Initialize session state for all fields if they don't exist
-        if "email" not in st.session_state:
-            st.session_state.email = user_profile.get("email", FORM_FIELDS["email"])
-        if "first_name" not in st.session_state:
-            st.session_state.first_name = user_profile.get("first_name", FORM_FIELDS["first_name"])
-        if "last_name" not in st.session_state:
-            st.session_state.last_name = user_profile.get("last_name", FORM_FIELDS["last_name"])
-        if "phone_number" not in st.session_state:
-            st.session_state.phone_number = user_profile.get("phone_number", FORM_FIELDS["phone_number"])
         if "weight_lbs" not in st.session_state:
             st.session_state.weight_lbs = str(user_profile.get("weight_lbs", FORM_FIELDS["weight_lbs"]))
         if "sex" not in st.session_state:
@@ -26,85 +18,6 @@ def personal_info_form(user_profile, user_status, errors):
             st.session_state.height_ft = user_profile.get("height_ft", FORM_FIELDS["height_ft"])
         if "height_in" not in st.session_state:
             st.session_state.height_in = user_profile.get("height_in", FORM_FIELDS["height_in"])
-
-        # Email
-        email_input = st.text_input(
-            "Email", 
-            disabled=is_returning_user, 
-            key="email"
-        )
-        if "email" in errors:
-            st.error(errors["email"])
-        
-        # Name
-        st.write("Name")
-        col1, col2 = st.columns(2)
-        with col1:
-            first_name_input = st.text_input(
-                "First Name", 
-                disabled=is_returning_user, 
-                key="first_name"
-            )
-            if "first_name" in errors:
-                st.error(errors["first_name"])
-        with col2:
-            last_name_input = st.text_input(
-                "Last Name", 
-                disabled=is_returning_user, 
-                key="last_name"
-            )
-            if "last_name" in errors:
-                st.error(errors["last_name"])
-
-        # Phone Number
-        phone_number_input = st.text_input(
-            "Phone Number",
-            disabled=is_returning_user,
-            key="phone_number"
-        )
-        if "phone_number" in errors:
-            st.error(errors["phone_number"])
-
-        # Date of Birth
-        st.write("Date of Birth")
-        today = datetime.date.today()
-        month_names = [datetime.date(2024, i, 1).strftime('%B') for i in range(1, 13)]
-
-        # Set defaults in session state if not already set
-        if "dob_year" not in st.session_state:
-            st.session_state.dob_year = FORM_FIELDS["dob_year"]
-        if "dob_month" not in st.session_state:
-            st.session_state.dob_month = month_names[0]
-        if "dob_day" not in st.session_state:
-            st.session_state.dob_day = 1
-
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            month_name = st.selectbox(
-                "Month", 
-                month_names, 
-                disabled=is_returning_user, 
-                key="dob_month"
-            )
-            month = month_names.index(month_name) + 1
-        with col2:
-            day = st.selectbox(
-                "Day", 
-                list(range(1, 32)), 
-                disabled=is_returning_user, 
-                key="dob_day"
-            )
-        with col3:
-            year_list = list(range(1920, today.year + 1))
-            year = st.selectbox("Year", year_list, disabled=is_returning_user, key="dob_year")
-
-        try:
-            dob = datetime.date(year, month, day)
-        except ValueError:
-            st.error("Please enter a valid date of birth.")
-            dob = None
-        if "dob" in errors:
-            st.error(errors["dob"])
 
         # Height - editable for both new and returning users
         st.write("Height")
@@ -137,11 +50,6 @@ def personal_info_form(user_profile, user_status, errors):
         )
 
         return {
-            "email": email_input,
-            "first_name": first_name_input,
-            "last_name": last_name_input,
-            "phone_number": phone_number_input,
-            "dob": dob,
             "height_ft": height_ft,
             "height_in": height_in,
             "weight_lbs": weight_input,

@@ -1,15 +1,9 @@
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Union
-import datetime
 
 class UserProfile(BaseModel):
-    profile_code: str
-    security_question_1: str
-    security_answer_1: str
-    security_question_2: str
-    security_answer_2: str
-    security_question_3: str
-    security_answer_3: str
+    user_id: str
+    age_range: str
     sex: Optional[str] = None
     height_ft: Optional[int] = Field(None, ge=4, le=7)
     height_in: Optional[int] = Field(None, ge=0, le=11)
@@ -41,18 +35,3 @@ class UserProfile(BaseModel):
             return weight
         except (ValueError, TypeError):
             raise ValueError('Please enter a valid number for weight.')
-
-    @validator('security_answer_1', 'security_answer_2', 'security_answer_3', pre=True, allow_reuse=True)
-    def validate_security_answers(cls, v):
-        if not v or not v.strip():
-            raise ValueError('Please answer all three security questions.')
-        return v
-
-    @root_validator(pre=True)
-    def validate_unique_security_questions(cls, values):
-        q1 = values.get('security_question_1')
-        q2 = values.get('security_question_2')
-        q3 = values.get('security_question_3')
-        if len({q1, q2, q3}) != 3:
-            raise ValueError('Please select three unique security questions.')
-        return values

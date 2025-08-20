@@ -16,7 +16,7 @@ class UserProfile(BaseModel):
     stress_level: Optional[str] = None
     pregnant_or_breastfeeding: Optional[str] = None
     medical_conditions: List[str] = []
-    current_medications: List[str] = []
+    medications: List[str] = []
     natural_supplements: List[str] = []
     allergies: List[str] = []
     health_goals: List[str] = []

@@ -1,11 +1,5 @@
 FORM_FIELDS = {
-    "first_name": "",
-    "last_name": "",
-    "email": "",
-    "phone_number": "",
-    "dob_month": "January",
-    "dob_day": 1,
-    "dob_year": 1990,
+    "age_range": "18-24",
     "sex": "Male",
     "height_ft": 5,
     "height_in": 6,
@@ -24,5 +18,9 @@ FORM_FIELDS = {
     "health_goals": [],
     "other_health_goal": "",
     "interested_supplements": "",
-    "additional_info": ""
+    "security_answer_1": "",
+    "security_answer_2": "",
+    "security_answer_3": "",
+    "additional_info": "",
+    "load_user_id": ""
 }

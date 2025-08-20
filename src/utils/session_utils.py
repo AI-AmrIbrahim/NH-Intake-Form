@@ -12,17 +12,21 @@ def initialize_session_state():
 
 def clear_form():
     """
-    Resets the form fields in the session state.
-    If the user is returning, personal information is preserved.
+    Resets the form fields in the session state, including the user profile.
     """
-    user_status = st.session_state.get("user_status")
-
-    personal_info_keys = [
-        "first_name", "last_name", "email", "phone_number", "dob_month", "dob_day", "dob_year", "sex", "load_email"
-    ]
-
+    # Reset all form fields to their default values
     for key, default_value in FORM_FIELDS.items():
-        if user_status == "Yes, I have filled out the intake form before" and key in personal_info_keys:
-            # Don't clear personal info for returning users
-            continue
         st.session_state[key] = default_value
+
+    # Reset the user_profile dictionary to its default state
+    st.session_state.user_profile = {
+            "user_id": "", "age_range": "18-24", "sex": "Male", "height_ft": 5, "height_in": 6, "weight_lbs": "",
+            "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
+            "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
+            "medications": [], "natural_supplements": [], "allergies": [], "health_goals": [], "other_health_goal": "",
+            "interested_supplements": [], "additional_info": "",
+            "security_question_1": "", "security_answer_1": "",
+            "security_question_2": "", "security_answer_2": "",
+            "security_question_3": "", "security_answer_3": ""
+        }
+    st.session_state.errors = {}

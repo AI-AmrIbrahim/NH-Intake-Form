@@ -77,10 +77,10 @@ def main():
     # --- Profile State Management ---
     if 'user_profile' not in st.session_state:
         st.session_state.user_profile = {
-            "user_id": "", "age_range": "18-24", "sex": "Male", "height_m": "", "weight_kg": "",
+            "user_id": "", "age_range": "18-24", "sex": "Male", "height_ft": 5, "height_in": 6, "weight_lbs": "",
             "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
             "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
-            "current_medications": [], "allergies": [], "health_goals": [], "other_health_goal": "",
+            "medications": [], "natural_supplements": [], "allergies": [], "health_goals": [], "other_health_goal": "",
             "interested_supplements": [], "additional_info": "",
             "security_question_1": "", "security_answer_1": "",
             "security_question_2": "", "security_answer_2": "",
@@ -91,14 +91,11 @@ def main():
     if 'recovery_mode' not in st.session_state:
         st.session_state.recovery_mode = False
 
-    user_profile = st.session_state.user_profile
-    errors = st.session_state.errors
-
     if user_status == "Yes, I have filled out the intake form before":
         with st.container(border=True):
             if st.session_state.recovery_mode:
                 st.header("Recover Your Profile Code")
-                security_questions_recovery = security_questions_form(user_profile, errors)
+                security_questions_recovery = security_questions_form(st.session_state.user_profile, st.session_state.errors)
                 if st.button("Recover My Code", key="recover_code"):
                     with st.spinner("Recovering your profile code..."):
                         profile = load_profile_by_security_questions(supabase, security_questions_recovery)
@@ -118,7 +115,6 @@ def main():
                     with st.spinner("Loading your profile..."):
                         profile = load_profile_from_db(supabase, user_id_input)
                         if profile:
-                            clear_form()
                             st.session_state.user_profile = profile
                             st.success("Profile loaded successfully!")
                             st.rerun()
@@ -127,6 +123,9 @@ def main():
                 if st.button("Forgot your profile code?", key="forgot_code"):
                     st.session_state.recovery_mode = True
                     st.rerun()
+
+    user_profile = st.session_state.user_profile
+    errors = st.session_state.errors
 
     # --- Form Questions ---
     personal_info = personal_info_form(user_profile, errors)
@@ -156,11 +155,6 @@ def main():
         st.session_state.errors = {}
         try:
             with st.spinner("Creating Your Profile, please wait to get your profile code..."):
-                height_m = (personal_info["height_ft"] * 12 + personal_info["height_in"]) * 0.0254
-                try:
-                    weight_kg = float(personal_info["weight_lbs"]) * 0.453592
-                except (ValueError, TypeError):
-                    weight_kg = 0
 
                 if user_status == "No, I have not filled out the intake form before":
                     chat_set = string.ascii_letters + string.digits
@@ -181,7 +175,7 @@ def main():
                         "stress_level": lifestyle["stress_level"],
                         "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
                         "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
-                        "current_medications": [s.strip() for s in medications_allergies["medications"].split(',') if s.strip()],
+                        "medications": [s.strip() for s in medications_allergies["medications"].split(',') if s.strip()],
                         "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
                         "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
                         "health_goals": health_goals["health_goals"],
@@ -221,7 +215,7 @@ def main():
                         "stress_level": lifestyle["stress_level"],
                         "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
                         "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
-                        "current_medications": [s.strip() for s in medications_allergies["medications"].split(',') if s.strip()],
+                        "medications": [s.strip() for s in medications_allergies["medications"].split(',') if s.strip()],
                         "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
                         "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
                         "health_goals": health_goals["health_goals"],

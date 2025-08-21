@@ -7,12 +7,12 @@ def medications_allergies_form(user_profile, errors):
         st.header("💊 Medications & Allergies")
         
         # Initialize session state for medications
-        if "medications" not in st.session_state:
-            stored_medications = user_profile.get("medications", FORM_FIELDS.get("medications", []))
+        if "current_medications" not in st.session_state:
+            stored_medications = user_profile.get("current_medications", FORM_FIELDS.get("current_medications", []))
             if isinstance(stored_medications, list):
-                st.session_state.medications = ", ".join(stored_medications)
+                st.session_state.current_medications = ", ".join(stored_medications)
             else:
-                st.session_state.medications = str(stored_medications)
+                st.session_state.current_medications = str(stored_medications)
         
         # Initialize session state for natural supplements
         if "natural_supplements" not in st.session_state:
@@ -33,10 +33,10 @@ def medications_allergies_form(user_profile, errors):
         medications = st.text_area(
             "Please list any Over-the-Counter (OTC) or prescribed medications you are currently taking.",
             placeholder="e.g., Ibuprofen, Aspirin, Atorvastatin, Amlodipine, Metformin. Please separate each with a comma.",
-            key="medications"
+            key="current_medications"
         )
-        if "medications" in errors:
-            st.error(errors["medications"])
+        if "current_medications" in errors:
+            st.error(errors["current_medications"])
         
         natural_supplements = st.text_area(
             "Please list any natural supplements you are currently taking.",
@@ -55,7 +55,7 @@ def medications_allergies_form(user_profile, errors):
             st.error(errors["allergies"])
 
         return {
-            "medications": medications,
+            "current_medications": medications,
             "natural_supplements": natural_supplements,
             "allergies": allergies
         }

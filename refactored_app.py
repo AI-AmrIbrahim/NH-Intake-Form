@@ -175,7 +175,7 @@ def main():
                         "stress_level": lifestyle["stress_level"],
                         "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
                         "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
-                        "medications": [s.strip() for s in medications_allergies["medications"].split(',') if s.strip()],
+                        "current_medications": [s.strip() for s in medications_allergies["current_medications"].split(',') if s.strip()],
                         "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
                         "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
                         "health_goals": health_goals["health_goals"],
@@ -191,7 +191,7 @@ def main():
                     }
                     
                     user_profile = UserProfile(**user_data)
-                    save_profile(supabase, user_profile.dict())
+                    save_profile(supabase, user_profile.model_dump())
 
                     with st.container(border=True):
                         st.subheader("Your Nutrition House Profile Code")
@@ -200,8 +200,8 @@ def main():
                     st.session_state.errors = {}
                 else:
                     # This is an update
-                    user_data = st.session_state.user_profile
-                    user_data.update({
+                    user_data = {
+                        "user_id": st.session_state.user_profile["user_id"],
                         "age_range": personal_info["age_range"],
                         "sex": personal_info["sex"],
                         "height_ft": personal_info["height_ft"],
@@ -215,16 +215,22 @@ def main():
                         "stress_level": lifestyle["stress_level"],
                         "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
                         "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
-                        "medications": [s.strip() for s in medications_allergies["medications"].split(',') if s.strip()],
+                        "current_medications": [s.strip() for s in medications_allergies["current_medications"].split(',') if s.strip()],
                         "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
                         "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
                         "health_goals": health_goals["health_goals"],
                         "other_health_goal": health_goals["other_health_goal"],
                         "interested_supplements": [s.strip() for s in health_goals["interested_supplements"].split(',') if s.strip()],
                         "additional_info": additional_info["additional_info"],
-                    })
+                        "security_question_1": st.session_state.user_profile["security_question_1"],
+                        "security_answer_1": st.session_state.user_profile["security_answer_1"],
+                        "security_question_2": st.session_state.user_profile["security_question_2"],
+                        "security_answer_2": st.session_state.user_profile["security_answer_2"],
+                        "security_question_3": st.session_state.user_profile["security_question_3"],
+                        "security_answer_3": st.session_state.user_profile["security_answer_3"],
+                    }
                     user_profile = UserProfile(**user_data)
-                    save_profile(supabase, user_profile.dict())
+                    save_profile(supabase, user_profile.model_dump())
                     st.success("Profile updated successfully!")
 
         except ValidationError as e:

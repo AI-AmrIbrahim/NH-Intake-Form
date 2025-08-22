@@ -4,7 +4,7 @@ from src.config.form_defaults import FORM_FIELDS
 def lifestyle_form(user_profile, errors):
     """Renders the lifestyle section of the form."""
     with st.container(border=True):
-        st.header("🏃 Lifestyle")
+        st.header("🥗 Lifestyle")
         
         # Initialize session state values if they don't exist
         if "physical_activity" not in st.session_state:

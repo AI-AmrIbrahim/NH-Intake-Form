@@ -127,7 +127,7 @@ def main():
     user_profile = st.session_state.user_profile
     errors = st.session_state.errors
 
-    # --- Form Questions ---
+    # --- Form Questions --
     personal_info = personal_info_form(user_profile, errors)
     lifestyle = lifestyle_form(user_profile, errors)
     medical_history = medical_history_form(user_profile, personal_info["sex"], errors)
@@ -136,6 +136,35 @@ def main():
     if user_status == "No, I have not filled out the intake form before":
         security_questions = security_questions_form(user_profile, errors)
     additional_info = additional_info_form(user_profile, errors)
+
+    if user_status == "Yes, I have filled out the intake form before":
+        with st.container(border=True):
+            st.header("Upload Test Kit Result")
+            uploaded_file = st.file_uploader("Upload your PDF test kit result", type="pdf")
+            if uploaded_file is not None:
+                if st.button("Upload and Save PDF"):
+                    with st.spinner("Uploading your file..."):
+                        # Generate a unique file name
+                        file_name = f"{st.session_state.user_profile['user_id']}_{uuid.uuid4().hex}.pdf"
+                        
+                        # Upload the file to Supabase Storage
+                        try:
+                            # The bucket must exist.
+                            supabase.storage.from_("test-kit-results").upload(file_name, uploaded_file.getvalue())
+                            
+                            # Get the public URL
+                            file_url = supabase.storage.from_("test-kit-results").get_public_url(file_name)
+                            
+                            # Update the user's profile
+                            update_data = {
+                                "test_kit_result_url": file_url,
+                                "test_kit_result_filename": uploaded_file.name
+                            }
+                            save_profile(supabase, {"user_id": st.session_state.user_profile['user_id'], **update_data})
+                            
+                            st.success("File uploaded and profile updated successfully!")
+                        except Exception as e:
+                            st.error(f"An error occurred during file upload: {e}")
 
     # --- Submission ---
     st.write("---")
@@ -154,58 +183,14 @@ def main():
     if submitted:
         st.session_state.errors = {}
         try:
-            with st.spinner("Creating Your Profile, please wait to get your profile code..."):
-
-                if user_status == "No, I have not filled out the intake form before":
-                    chat_set = string.ascii_letters + string.digits
-                    user_id_raw = ''.join(random.choices(chat_set, k=9))
-                    user_id_formatted = f"{user_id_raw[:3]}-{user_id_raw[3:6]}-{user_id_raw[6:]}"
-                    user_data = {
-                        "user_id": user_id_formatted,
-                        "age_range": personal_info["age_range"],
-                        "sex": personal_info["sex"],
-                        "height_ft": personal_info["height_ft"],
-                        "height_in": personal_info["height_in"],
-                        "weight_lbs": personal_info["weight_lbs"],
-                        "physical_activity": lifestyle["physical_activity"],
-                        "energy_level": lifestyle["energy_level"],
-                        "diet": lifestyle["diet"],
-                        "meals_per_day": lifestyle["meals_per_day"],
-                        "sleep_quality": lifestyle["sleep_quality"],
-                        "stress_level": lifestyle["stress_level"],
-                        "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
-                        "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
-                        "current_medications": [s.strip() for s in medications_allergies["current_medications"].split(',') if s.strip()],
-                        "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
-                        "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
-                        "health_goals": health_goals["health_goals"],
-                        "other_health_goal": health_goals["other_health_goal"],
-                        "interested_supplements": [s.strip() for s in health_goals["interested_supplements"].split(',') if s.strip()],
-                        "additional_info": additional_info["additional_info"],
-                        "security_question_1": security_questions["security_question_1"],
-                        "security_answer_1": security_questions["security_answer_1"],
-                        "security_question_2": security_questions["security_question_2"],
-                        "security_answer_2": security_questions["security_answer_2"],
-                        "security_question_3": security_questions["security_question_3"],
-                        "security_answer_3": security_questions["security_answer_3"]
-                    }
-                    
-                    user_profile = UserProfile(**user_data)
-                    save_profile(supabase, user_profile.model_dump())
-
-                    with st.container(border=True):
-                        st.subheader("Your Nutrition House Profile Code")
-                        display_message("success", f"Profile created successfully! Your Profile Code is: {user_id_formatted}")
-                        st.info("Please save this code in a safe space to load your profile for future visits.")
-                    st.session_state.errors = {}
-                else:
-                    # This is an update
-                    if not st.session_state.user_profile.get("user_id"):
-                        with st.container(border=True):
-                            display_message("error", "Please enter your profile code to load your profile, or create a new profile if you have not already.")
-                    else:
+            if user_status == "No, I have not filled out the intake form before":
+                with st.container(border=True):
+                    with st.spinner("Creating Your Profile, please wait to get your profile code..."):
+                        chat_set = string.ascii_letters + string.digits
+                        user_id_raw = ''.join(random.choices(chat_set, k=9))
+                        user_id_formatted = f"{user_id_raw[:3]}-{user_id_raw[3:6]}-{user_id_raw[6:]}"
                         user_data = {
-                            "user_id": st.session_state.user_profile["user_id"],
+                            "user_id": user_id_formatted,
                             "age_range": personal_info["age_range"],
                             "sex": personal_info["sex"],
                             "height_ft": personal_info["height_ft"],
@@ -226,17 +211,59 @@ def main():
                             "other_health_goal": health_goals["other_health_goal"],
                             "interested_supplements": [s.strip() for s in health_goals["interested_supplements"].split(',') if s.strip()],
                             "additional_info": additional_info["additional_info"],
-                            "security_question_1": st.session_state.user_profile["security_question_1"],
-                            "security_answer_1": st.session_state.user_profile["security_answer_1"],
-                            "security_question_2": st.session_state.user_profile["security_question_2"],
-                            "security_answer_2": st.session_state.user_profile["security_answer_2"],
-                            "security_question_3": st.session_state.user_profile["security_question_3"],
-                            "security_answer_3": st.session_state.user_profile["security_answer_3"],
+                            "security_question_1": security_questions["security_question_1"],
+                            "security_answer_1": security_questions["security_answer_1"],
+                            "security_question_2": security_questions["security_question_2"],
+                            "security_answer_2": security_questions["security_answer_2"],
+                            "security_question_3": security_questions["security_question_3"],
+                            "security_answer_3": security_questions["security_answer_3"]
                         }
+                        
                         user_profile = UserProfile(**user_data)
                         save_profile(supabase, user_profile.model_dump())
-                        with st.container(border=True):
-                            display_message("success", "Profile updated successfully!")
+
+                        st.header(f"**Your Profile Code is: {user_id_formatted}**")
+                        st.info("Please save this code in a safe space to load your profile for future visits.")
+                st.session_state.errors = {}
+            else:
+                # This is an update
+                if not st.session_state.user_profile.get("user_id"):
+                    with st.container(border=True):
+                        display_message("error", "Please enter your profile code to load your profile, or create a new profile if you have not already.")
+                else:
+                    user_data = {
+                        "user_id": st.session_state.user_profile["user_id"],
+                        "age_range": personal_info["age_range"],
+                        "sex": personal_info["sex"],
+                        "height_ft": personal_info["height_ft"],
+                        "height_in": personal_info["height_in"],
+                        "weight_lbs": personal_info["weight_lbs"],
+                        "physical_activity": lifestyle["physical_activity"],
+                        "energy_level": lifestyle["energy_level"],
+                        "diet": lifestyle["diet"],
+                        "meals_per_day": lifestyle["meals_per_day"],
+                        "sleep_quality": lifestyle["sleep_quality"],
+                        "stress_level": lifestyle["stress_level"],
+                        "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
+                        "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
+                        "current_medications": [s.strip() for s in medications_allergies["current_medications"].split(',') if s.strip()],
+                        "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
+                        "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
+                        "health_goals": health_goals["health_goals"],
+                        "other_health_goal": health_goals["other_health_goal"],
+                        "interested_supplements": [s.strip() for s in health_goals["interested_supplements"].split(',') if s.strip()],
+                        "additional_info": additional_info["additional_info"],
+                        "security_question_1": st.session_state.user_profile["security_question_1"],
+                        "security_answer_1": st.session_state.user_profile["security_answer_1"],
+                        "security_question_2": st.session_state.user_profile["security_question_2"],
+                        "security_answer_2": st.session_state.user_profile["security_answer_2"],
+                        "security_question_3": st.session_state.user_profile["security_question_3"],
+                        "security_answer_3": st.session_state.user_profile["security_answer_3"],
+                    }
+                    user_profile = UserProfile(**user_data)
+                    save_profile(supabase, user_profile.model_dump())
+                    with st.container(border=True):
+                        display_message("success", "Profile updated successfully!")
 
         except ValidationError as e:
             st.session_state.errors = {err['loc'][0]: err['msg'] for err in e.errors()}

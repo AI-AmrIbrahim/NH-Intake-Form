@@ -8,17 +8,17 @@ def lifestyle_form(user_profile, errors):
         
         # Initialize session state values if they don't exist
         if "physical_activity" not in st.session_state:
-            st.session_state.physical_activity = FORM_FIELDS["physical_activity"]
+            st.session_state.physical_activity = user_profile.get("physical_activity", FORM_FIELDS["physical_activity"])
         if "energy_level" not in st.session_state:
-            st.session_state.energy_level = FORM_FIELDS["energy_level"]
+            st.session_state.energy_level = user_profile.get("energy_level", FORM_FIELDS["energy_level"])
         if "diet" not in st.session_state:
-            st.session_state.diet = FORM_FIELDS["diet"]
+            st.session_state.diet = user_profile.get("diet", FORM_FIELDS["diet"])
         if "meals_per_day" not in st.session_state:
-            st.session_state.meals_per_day = FORM_FIELDS["meals_per_day"]
+            st.session_state.meals_per_day = user_profile.get("meals_per_day", FORM_FIELDS["meals_per_day"])
         if "sleep_quality" not in st.session_state:
-            st.session_state.sleep_quality = FORM_FIELDS["sleep_quality"]
+            st.session_state.sleep_quality = user_profile.get("sleep_quality", FORM_FIELDS["sleep_quality"])
         if "stress_level" not in st.session_state:
-            st.session_state.stress_level = FORM_FIELDS["stress_level"]
+            st.session_state.stress_level = user_profile.get("stress_level", FORM_FIELDS["stress_level"])
         
         activity_options = ["0-1 days", "1-2 days", "3-4 days", "5-7 days"]
         physical_activity = st.selectbox(

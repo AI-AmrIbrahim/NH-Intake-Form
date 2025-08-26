@@ -1,2 +1,7 @@
 [server]
 folderWatchBlacklist = ["__pycache__"]
+
+[theme]
+base = "light"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#FFFFFF"

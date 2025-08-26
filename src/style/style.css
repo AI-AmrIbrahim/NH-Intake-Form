@@ -52,6 +52,11 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+/* Force a white background on the main content containers */
+div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] > div {
+    background-color: white !important;
+}
+
 /* Custom container for title/description */
 .form-title-container {
     background-color: #FFFFFF;

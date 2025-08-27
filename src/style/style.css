@@ -5,13 +5,13 @@
 
 /* Title and Headers */
 .form-title-container h1 {
-    color: #222f62;
+    color: #222f62 !important;
     text-align: center;
     font-weight: bold;
     font-size: 2.5em;
 }
 h2, h3 {
-    color: #222f62;
+    color: #222f62 !important;
 }
 
 /* Main text color */
@@ -50,11 +50,6 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 10px;
     padding: 25px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-/* Force a white background on the main content containers */
-div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] > div {
-    background-color: white !important;
 }
 
 /* Custom container for title/description */

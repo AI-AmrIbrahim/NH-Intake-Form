@@ -1,9 +1,16 @@
 import streamlit as st
+from streamlit_extras.stylable_container import stylable_container
 from src.config.form_defaults import FORM_FIELDS
 
 def lifestyle_form(user_profile, errors):
     """Renders the lifestyle section of the form."""
-    with st.container(border=True):
+    with stylable_container(key="lifestyle_container", css_styles='''
+    {
+        background-color: #FFFFFF;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    '''):
         st.header("🥗 Lifestyle")
         
         # Initialize session state values if they don't exist

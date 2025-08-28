@@ -1,9 +1,16 @@
 import streamlit as st
+from streamlit_extras.stylable_container import stylable_container
 from src.config.form_defaults import FORM_FIELDS
 
 def health_goals_form(user_profile, errors):
     """Renders the health goals section of the form."""
-    with st.container(border=True):
+    with stylable_container(key="health_goals_container", css_styles='''
+    {
+        background-color: #FFFFFF;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    '''):
         st.header("🎯 Health Goals")
         health_goals_options = [
             "Improve Energy", "Boost Immunity", "Support Joint Health",

@@ -1,9 +1,16 @@
 import streamlit as st
+from streamlit_extras.stylable_container import stylable_container
 from src.config.form_defaults import FORM_FIELDS
 
 def medical_history_form(user_profile, sex, errors):
     """Renders the medical history section of the form."""
-    with st.container(border=True):
+    with stylable_container(key="medical_history_container", css_styles='''
+    {
+        background-color: #FFFFFF;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    '''):
         st.header("⚕️ Medical History")
         
         # Initialize session state for medical conditions

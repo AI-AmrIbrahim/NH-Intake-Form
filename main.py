@@ -4,6 +4,7 @@ import json
 import uuid
 import random
 import string
+from streamlit_extras.stylable_container import stylable_container
 from src.utils.file_utils import get_base64_of_bin_file
 from src.utils.session_utils import clear_form
 from src.utils.style_utils import inject_css, display_message
@@ -53,7 +54,13 @@ def main():
 
 
     # --- Header ---
-    with st.container(border=True):
+    with stylable_container(key="header_container", css_styles='''
+    {
+        background-color: #FFFFFF;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    '''):
         st.image("assets/NH_logo.png", use_container_width=True)
 
     st.markdown("""
@@ -65,7 +72,13 @@ def main():
     st.write("---")
 
     # --- User Status Selection ---
-    with st.container(border=True):
+    with stylable_container(key="user_status_container", css_styles='''
+    {
+        background-color: #FFFFFF;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    '''):
         st.radio(
             "Do you have a profile with Nutrition House?",
             ("No, I have not filled out the intake form before", "Yes, I have filled out the intake form before"),
@@ -92,7 +105,13 @@ def main():
         st.session_state.recovery_mode = False
 
     if user_status == "Yes, I have filled out the intake form before":
-        with st.container(border=True):
+        with stylable_container(key="load_profile_container", css_styles='''
+        {
+            background-color: #FFFFFF;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        '''):
             if st.session_state.recovery_mode:
                 st.header("Recover Your Profile Code")
                 security_questions_recovery = security_questions_form(st.session_state.user_profile, st.session_state.errors)
@@ -100,7 +119,13 @@ def main():
                     with st.spinner("Recovering your profile code..."):
                         profile = load_profile_by_security_questions(supabase, security_questions_recovery)
                         if profile:
-                            with st.container(border=True):
+                            with stylable_container(key="profile_code_container", css_styles='''
+                            {
+                                background-color: #FFFFFF;
+                                border-radius: 0.5rem;
+                                padding: 1rem;
+                            }
+                            '''):
                                 st.subheader("Your Nutrition House Profile Code")
                                 st.success(f"Your Profile Code is: {profile['user_id']}")
                                 st.info("Please save this code in a safe space to load your profile for future visits.")
@@ -111,6 +136,7 @@ def main():
                     st.rerun()
             else:
                 user_id_input = st.text_input("Enter your Unique ID to load your profile:", key="load_user_id")
+                st.write("")
                 if st.button("Load Profile", key="load_profile"):
                     with st.spinner("Loading your profile..."):
                         profile = load_profile_from_db(supabase, user_id_input)
@@ -138,7 +164,13 @@ def main():
     additional_info = additional_info_form(user_profile, errors)
 
     if user_status == "Yes, I have filled out the intake form before":
-        with st.container(border=True):
+        with stylable_container(key="upload_container", css_styles='''
+        {
+            background-color: #FFFFFF;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        '''):
             st.header("Upload Test Kit Result")
             uploaded_file = st.file_uploader("Upload your PDF test kit result", type="pdf")
             if uploaded_file is not None:
@@ -184,7 +216,13 @@ def main():
         st.session_state.errors = {}
         try:
             if user_status == "No, I have not filled out the intake form before":
-                with st.container(border=True):
+                with stylable_container(key="create_profile_container", css_styles='''
+                {
+                    background-color: #FFFFFF;
+                    border-radius: 0.5rem;
+                    padding: 1rem;
+                }
+                '''):
                     with st.spinner("Creating Your Profile, please wait to get your profile code..."):
                         chat_set = string.ascii_letters + string.digits
                         user_id_raw = ''.join(random.choices(chat_set, k=9))
@@ -228,7 +266,13 @@ def main():
             else:
                 # This is an update
                 if not st.session_state.user_profile.get("user_id"):
-                    with st.container(border=True):
+                    with stylable_container(key="error_container", css_styles='''
+                    {
+                        background-color: #FFFFFF;
+                        border-radius: 0.5rem;
+                        padding: 1rem;
+                    }
+                    '''):
                         display_message("error", "Please enter your profile code to load your profile, or create a new profile if you have not already.")
                 else:
                     user_data = {
@@ -262,12 +306,24 @@ def main():
                     }
                     user_profile = UserProfile(**user_data)
                     save_profile(supabase, user_profile.model_dump())
-                    with st.container(border=True):
+                    with stylable_container(key="success_container", css_styles='''
+                    {
+                        background-color: #FFFFFF;
+                        border-radius: 0.5rem;
+                        padding: 1rem;
+                    }
+                    '''):
                         display_message("success", "Profile updated successfully!")
 
         except ValidationError as e:
             st.session_state.errors = {err['loc'][0]: err['msg'] for err in e.errors()}
-            with st.container(border=True):
+            with stylable_container(key="validation_error_container", css_styles='''
+            {
+                background-color: #FFFFFF;
+                border-radius: 0.5rem;
+                padding: 1rem;
+            }
+            '''):
                 for field, message in st.session_state.errors.items():
                     display_message("error", f"{field.replace('_', ' ').title()}: {message}")
 

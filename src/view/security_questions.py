@@ -1,9 +1,16 @@
 import streamlit as st
+from streamlit_extras.stylable_container import stylable_container
 from src.config.security_questions import SECURITY_QUESTIONS
 
 def security_questions_form(user_profile, errors):
     """Renders the security questions section of the form."""
-    with st.container(border=True):
+    with stylable_container(key="security_questions_container", css_styles='''
+    {
+        background-color: #FFFFFF;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    '''):
         st.header("🔒 Security Questions")
         st.write("Please select three unique security questions and provide answers. These will be used to recover your profile if you forget your Unique ID.")
 

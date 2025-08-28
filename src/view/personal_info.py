@@ -1,9 +1,16 @@
 import streamlit as st
 from src.config.form_defaults import FORM_FIELDS
+from streamlit_extras.stylable_container import stylable_container
 
 def personal_info_form(user_profile, errors):
     """Renders the personal information section of the form."""
-    with st.container(border=True):
+    with stylable_container(key="personal_info_container", css_styles='''
+    {
+        background-color: #FFFFFF;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    '''):
         st.header("👤 Personal Information")
 
         # Initialize session state for all fields if they don't exist

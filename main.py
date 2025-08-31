@@ -56,12 +56,14 @@ def main():
     # --- Header ---
     with stylable_container(key="header_container", css_styles='''
     {
+        display: flex;
+        justify-content: center;
         background-color: #FFFFFF;
         border-radius: 0.5rem;
         padding: 1rem;
     }
     '''):
-        st.image("assets/NH_logo.png", use_container_width=True)
+        st.image("assets/NH_logo.png")
 
     st.markdown("""
     <div class="form-title-container">

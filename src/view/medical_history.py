@@ -41,7 +41,7 @@ def medical_history_form(user_profile, sex, errors):
         
         medical_conditions = st.text_area(
             "Please list any pre-existing medical conditions.",
-            placeholder="e.g., High blood pressure, Asthma, Diabetes. Please separate each condition with a comma.",
+            placeholder="e.g., High blood pressure, Asthma, Diabetes.\n\nPlease separate each condition with a comma.",
             key="medical_conditions"
         )
         if "medical_conditions" in errors:

@@ -60,3 +60,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     padding: 15px 25px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
+
+.st-key-header_container {
+    background-color: rgba(255, 255, 255, 1);
+}

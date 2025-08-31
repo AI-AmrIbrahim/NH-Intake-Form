@@ -58,7 +58,7 @@ def health_goals_form(user_profile, errors):
 
         interested_supplements = st.text_area(
             "Are there any specific vitamins or supplements you are interested in?",
-            placeholder="e.g., Vitamin D, Probiotics, Turmeric. Please separate each with a comma.",
+            placeholder="e.g., Vitamin D, Probiotics, Turmeric. \n\nPlease separate each with a comma.",
             key="interested_supplements"
         )
         if "interested_supplements" in errors:

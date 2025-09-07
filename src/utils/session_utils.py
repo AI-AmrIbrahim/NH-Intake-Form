@@ -30,6 +30,3 @@ def clear_form():
             "security_question_3": "", "security_answer_3": ""
         }
     st.session_state.errors = {}
-
-    if "pdf_uploader" in st.session_state:
-        st.session_state.pdf_uploader = None

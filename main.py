@@ -174,7 +174,7 @@ def main():
         }
         '''):
             st.header("Upload Test Kit Result")
-            uploaded_file = st.file_uploader("Upload your PDF test kit result", type="pdf", key="pdf_uploader")
+            uploaded_file = st.file_uploader("Upload your PDF test kit result", type="pdf")
             if uploaded_file is not None:
                 if st.button("Upload and Save PDF"):
                     with st.spinner("Uploading your file..."):

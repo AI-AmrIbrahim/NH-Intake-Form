@@ -52,6 +52,11 @@ def security_questions_form(user_profile, errors):
         if "security_answer_3" in errors:
             st.error(errors["security_answer_3"])
 
+        # Check for duplicate security questions and show error
+        selected_questions = [sq1, sq2, sq3]
+        if len(set(selected_questions)) != len(selected_questions):
+            st.error("⚠️ Please select three unique security questions. You cannot choose the same question multiple times.")
+
         return {
             "security_question_1": sq1,
             "security_answer_1": sa1,

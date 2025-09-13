@@ -264,7 +264,7 @@ def main():
 
                         st.header(f"**Your Profile Code is: {user_id_formatted}**")
                         st.info("Please save this code in a safe space to load your profile for future visits.")
-                st.session_state.errors = {}
+                        st.session_state.errors = {}
             else:
                 # This is an update
                 if not st.session_state.user_profile.get("user_id"):
@@ -318,7 +318,7 @@ def main():
                         display_message("success", "Profile updated successfully!")
 
         except ValidationError as e:
-            st.session_state.errors = {err['loc'][0]: err['msg'] for err in e.errors()}
+            st.session_state.errors = {err['loc'][0] if err['loc'] else 'general': err['msg'] for err in e.errors()}
             with stylable_container(key="validation_error_container", css_styles='''
             {
                 background-color: #FFFFFF;

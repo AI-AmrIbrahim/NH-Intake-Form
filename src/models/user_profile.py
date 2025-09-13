@@ -54,5 +54,5 @@ class UserProfile(BaseModel):
         q2 = values.get('security_question_2')
         q3 = values.get('security_question_3')
         if len({q1, q2, q3}) != 3:
-            raise ValueError('Please select three unique security questions.')
+            raise ValueError('Security Questions: You cannot choose the same question multiple times. Please select three unique security questions.')
         return values

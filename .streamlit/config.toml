@@ -4,4 +4,4 @@ folderWatchBlacklist = ["__pycache__"]
 [theme]
 base = "light"
 backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F8F9FA"

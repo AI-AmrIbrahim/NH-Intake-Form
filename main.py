@@ -184,8 +184,9 @@ def main():
                 if uploaded_file is not None:
                     if st.button("Upload and Save PDF"):
                         with st.spinner("Uploading your file..."):
-                            # Generate a unique file name
-                            file_name = f"{st.session_state.user_profile['user_id']}_{uuid.uuid4().hex}.pdf"
+                            # Generate a unique file name with user's original filename
+                            original_name = uploaded_file.name.replace('.pdf', '').replace(' ', '_')
+                            file_name = f"{st.session_state.user_profile['user_id']}_{original_name}_{uuid.uuid4().hex[:8]}.pdf"
 
                             # Upload the file to Supabase Storage
                             try:

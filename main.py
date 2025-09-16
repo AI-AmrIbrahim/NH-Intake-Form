@@ -165,47 +165,6 @@ def main():
         security_questions = security_questions_form(user_profile, errors)
     additional_info = additional_info_form(user_profile, errors)
 
-    if user_status == "Yes, I have filled out the intake form before":
-        with stylable_container(key="upload_container", css_styles='''
-        {
-            background-color: #FFFFFF;
-            border-radius: 0.5rem;
-            padding: 1rem;
-        }
-        '''):
-            st.header("Upload Test Kit Result")
-
-            # Check if user has loaded their profile
-            if not st.session_state.user_profile.get("user_id"):
-                st.warning("⚠️ Please enter your Profile Code above and load your profile before uploading test kit results.")
-                st.file_uploader("Upload your PDF test kit result", type="pdf", disabled=True)
-            else:
-                uploaded_file = st.file_uploader("Upload your PDF test kit result", type="pdf")
-                if uploaded_file is not None:
-                    if st.button("Upload and Save PDF"):
-                        with st.spinner("Uploading your file..."):
-                            # Generate a unique file name with user's original filename
-                            original_name = uploaded_file.name.replace('.pdf', '').replace(' ', '_')
-                            file_name = f"{st.session_state.user_profile['user_id']}_{original_name}_{uuid.uuid4().hex[:8]}.pdf"
-
-                            # Upload the file to Supabase Storage
-                            try:
-                                # The bucket must exist.
-                                supabase.storage.from_("test-kit-results").upload(file_name, uploaded_file.getvalue())
-
-                                # Get the public URL
-                                file_url = supabase.storage.from_("test-kit-results").get_public_url(file_name)
-
-                                # Update the user's profile
-                                update_data = {
-                                    "test_kit_result_url": file_url,
-                                    "test_kit_result_filename": uploaded_file.name
-                                }
-                                save_profile(supabase, {"user_id": st.session_state.user_profile['user_id'], **update_data})
-
-                                st.success("File uploaded and profile updated successfully!")
-                            except Exception as e:
-                                st.error(f"An error occurred during file upload: {e}")
 
     # --- Submission ---
     st.write("---")

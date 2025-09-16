@@ -226,3 +226,40 @@ app = workflow.compile()
 *   **User Satisfaction:** Measured through user surveys and feedback.
 *   **Conversion Rate:** The percentage of users who purchase a recommended product.
 *   **System Uptime:** The percentage of time that the system is available and operational.
+
+## 16. Current Upload Functionality (Temporarily Removed)
+
+### What the Upload Feature Currently Does:
+- **Location**: Lines 168-209 in main.py (removed temporarily)
+- **Trigger**: Only appears when user selects "Yes, I have filled out the intake form before"
+- **Requirements**: User must load their profile first (enter Profile Code) before upload is enabled
+- **Functionality**:
+  - Accepts PDF files only via `st.file_uploader()`
+  - Generates unique filename: `{user_id}_{original_name}_{uuid}.pdf`
+  - Uploads to Supabase Storage bucket called "test-kit-results"
+  - Updates user profile with:
+    - `test_kit_result_url`: Public URL from Supabase storage
+    - `test_kit_result_filename`: Original filename
+  - Shows success/error messages to user
+
+### Technical Implementation Details:
+- Uses `supabase.storage.from_("test-kit-results").upload()`
+- File naming pattern prevents conflicts with UUID
+- Profile update uses existing `save_profile()` function
+- Error handling for upload failures included
+
+### Why Temporarily Removed:
+- PHI (Protected Health Information) removal needed before file processing
+- Feature incomplete without proper data sanitization
+- Better UX to hide incomplete features
+
+### Future Development Plan:
+1. Add PHI detection/removal pipeline
+2. Implement secure file processing
+3. Add file validation beyond just PDF type checking
+4. Consider file size limits
+5. Add file management (view/delete uploaded files)
+6. Test with various PDF formats and contents
+
+### Code to Re-add Later:
+The upload container code (lines 168-209) is preserved in git history for reference when ready to implement properly with PHI handling.

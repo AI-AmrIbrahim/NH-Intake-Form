@@ -15,7 +15,8 @@ def personal_info_form(user_profile, errors):
 
         # Initialize session state for all fields if they don't exist
         if "weight_lbs" not in st.session_state:
-            st.session_state.weight_lbs = str(user_profile.get("weight_lbs", FORM_FIELDS["weight_lbs"]))
+            weight_value = user_profile.get("weight_lbs", FORM_FIELDS["weight_lbs"])
+            st.session_state.weight_lbs = str(weight_value) if weight_value is not None else ""
         if "sex" not in st.session_state:
             st.session_state.sex = user_profile.get("sex", FORM_FIELDS["sex"])
         if "height_ft" not in st.session_state:

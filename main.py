@@ -200,74 +200,84 @@ def main():
 
         try:
             if user_status == "No, I have not filled out the intake form before":
-                with stylable_container(key="create_profile_container", css_styles='''
-                {
-                    background-color: #FFFFFF;
-                    border-radius: 0.5rem;
-                    padding: 1rem;
+                # Generate user ID and prepare data
+                chat_set = string.ascii_letters + string.digits
+                user_id_raw = ''.join(random.choices(chat_set, k=9))
+                user_id_formatted = f"{user_id_raw[:3]}-{user_id_raw[3:6]}-{user_id_raw[6:]}"
+                user_data = {
+                    "user_id": user_id_formatted,
+                    "age_range": personal_info["age_range"],
+                    "sex": personal_info["sex"],
+                    "height_ft": personal_info["height_ft"],
+                    "height_in": personal_info["height_in"],
+                    "weight_lbs": personal_info["weight_lbs"],
+                    "physical_activity": lifestyle["physical_activity"],
+                    "energy_level": lifestyle["energy_level"],
+                    "diet": lifestyle["diet"],
+                    "meals_per_day": lifestyle["meals_per_day"],
+                    "sleep_quality": lifestyle["sleep_quality"],
+                    "stress_level": lifestyle["stress_level"],
+                    "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
+                    "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
+                    "current_medications": [s.strip() for s in medications_allergies["current_medications"].split(',') if s.strip()],
+                    "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
+                    "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
+                    "health_goals": health_goals["health_goals"],
+                    "other_health_goal": health_goals["other_health_goal"],
+                    "interested_supplements": [s.strip() for s in health_goals["interested_supplements"].split(',') if s.strip()],
+                    "additional_info": additional_info["additional_info"],
+                    "security_question_1": security_questions["security_question_1"],
+                    "security_answer_1": security_questions["security_answer_1"],
+                    "security_question_2": security_questions["security_question_2"],
+                    "security_answer_2": security_questions["security_answer_2"],
+                    "security_question_3": security_questions["security_question_3"],
+                    "security_answer_3": security_questions["security_answer_3"]
                 }
-                '''):
-                    with st.spinner("Creating Your Profile, please wait to get your profile code..."):
-                        chat_set = string.ascii_letters + string.digits
-                        user_id_raw = ''.join(random.choices(chat_set, k=9))
-                        user_id_formatted = f"{user_id_raw[:3]}-{user_id_raw[3:6]}-{user_id_raw[6:]}"
-                        user_data = {
-                            "user_id": user_id_formatted,
-                            "age_range": personal_info["age_range"],
-                            "sex": personal_info["sex"],
-                            "height_ft": personal_info["height_ft"],
-                            "height_in": personal_info["height_in"],
-                            "weight_lbs": personal_info["weight_lbs"],
-                            "physical_activity": lifestyle["physical_activity"],
-                            "energy_level": lifestyle["energy_level"],
-                            "diet": lifestyle["diet"],
-                            "meals_per_day": lifestyle["meals_per_day"],
-                            "sleep_quality": lifestyle["sleep_quality"],
-                            "stress_level": lifestyle["stress_level"],
-                            "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
-                            "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
-                            "current_medications": [s.strip() for s in medications_allergies["current_medications"].split(',') if s.strip()],
-                            "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
-                            "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
-                            "health_goals": health_goals["health_goals"],
-                            "other_health_goal": health_goals["other_health_goal"],
-                            "interested_supplements": [s.strip() for s in health_goals["interested_supplements"].split(',') if s.strip()],
-                            "additional_info": additional_info["additional_info"],
-                            "security_question_1": security_questions["security_question_1"],
-                            "security_answer_1": security_questions["security_answer_1"],
-                            "security_question_2": security_questions["security_question_2"],
-                            "security_answer_2": security_questions["security_answer_2"],
-                            "security_question_3": security_questions["security_question_3"],
-                            "security_answer_3": security_questions["security_answer_3"]
-                        }
-                        
-                        user_profile = UserProfile(**user_data)
-                        success, message = save_profile(supabase, user_profile.model_dump())
 
-                        if success:
-                            st.header(f"**Your Profile Code is: {user_id_formatted}**")
-                            st.info("Please save this code in a safe space to load your profile for future visits.")
-                            st.success(message)
-                            st.session_state.errors = {}
+                # Save profile with spinner
+                with st.spinner("Creating Your Profile, please wait to get your profile code..."):
+                    user_profile = UserProfile(**user_data)
+                    success, message = save_profile(supabase, user_profile.model_dump())
 
-                            # Log successful profile creation (wrapped to prevent errors)
-                            try:
-                                log_user_action("profile_created", user_id_formatted)
-                                track_form_performance(start_time, "profile_creation", True)
-                            except Exception as log_error:
-                                # Don't let monitoring errors break the user experience
-                                pass
-                        else:
-                            st.error(message)
+                # Display results outside spinner
+                if success:
+                    with stylable_container(key="create_profile_success_container", css_styles='''
+                    {
+                        background-color: #FFFFFF;
+                        border-radius: 0.5rem;
+                        padding: 1rem;
+                    }
+                    '''):
+                        st.header(f"**Your Profile Code is: {user_id_formatted}**")
+                        st.info("Please save this code in a safe space to load your profile for future visits.")
+                        st.success(message)
+                        st.session_state.errors = {}
 
-                            # Log failed profile creation (wrapped to prevent errors)
-                            try:
-                                log_user_action("profile_creation_failed", user_id_formatted, {"error": message})
-                                track_form_performance(start_time, "profile_creation", False)
-                            except Exception as log_error:
-                                # Don't let monitoring errors break the user experience
-                                pass
-                            return  # Don't continue if save failed
+                        # Log successful profile creation (wrapped to prevent errors)
+                        try:
+                            log_user_action("profile_created", user_id_formatted)
+                            track_form_performance(start_time, "profile_creation", True)
+                        except Exception as log_error:
+                            # Don't let monitoring errors break the user experience
+                            pass
+                else:
+                    with stylable_container(key="create_profile_error_container", css_styles='''
+                    {
+                        background-color: #FFFFFF;
+                        border-radius: 0.5rem;
+                        padding: 1rem;
+                    }
+                    '''):
+                        st.error(message)
+
+                        # Log failed profile creation (wrapped to prevent errors)
+                        try:
+                            log_user_action("profile_creation_failed", user_id_formatted, {"error": message})
+                            track_form_performance(start_time, "profile_creation", False)
+                        except Exception as log_error:
+                            # Don't let monitoring errors break the user experience
+                            pass
+                        return  # Don't continue if save failed
             else:
                 # This is an update
                 if not st.session_state.user_profile.get("user_id"):

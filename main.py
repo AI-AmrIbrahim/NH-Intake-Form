@@ -4,6 +4,7 @@ import json
 import uuid
 import random
 import string
+import time
 from streamlit_extras.stylable_container import stylable_container
 from src.utils.file_utils import get_base64_of_bin_file
 from src.utils.session_utils import clear_form
@@ -16,6 +17,7 @@ from src.view.health_goals import health_goals_form
 from src.view.additional_info import additional_info_form
 from src.view.security_questions import security_questions_form
 from src.utils.db_utils import init_connection, save_profile, load_profile_from_db, load_profile_by_security_questions
+from src.utils.monitoring import log_user_action, track_form_performance, display_admin_dashboard, monitor_concurrent_users, log_error_with_context
 from src.models.user_profile import UserProfile
 from pydantic import ValidationError
 
@@ -32,6 +34,13 @@ def main():
         page_icon="assets/NH_favicon.png",
         layout="centered"
     )
+
+    # --- Initialize monitoring ---
+    try:
+        concurrent_users = monitor_concurrent_users()
+        log_user_action("page_load", additional_data={"concurrent_users": concurrent_users})
+    except Exception as e:
+        log_error_with_context(e, {"action": "monitoring_init"})
 
     # --- Set Background Image ---
     background_image_b64 = get_base64_of_bin_file('assets/background.png')
@@ -119,7 +128,7 @@ def main():
                 security_questions_recovery = security_questions_form(st.session_state.user_profile, st.session_state.errors)
                 if st.button("Recover My Code", key="recover_code"):
                     with st.spinner("Recovering your profile code..."):
-                        profile = load_profile_by_security_questions(supabase, security_questions_recovery)
+                        profile, message = load_profile_by_security_questions(supabase, security_questions_recovery)
                         if profile:
                             with stylable_container(key="profile_code_container", css_styles='''
                             {
@@ -132,7 +141,7 @@ def main():
                                 st.success(f"Your Profile Code is: {profile['user_id']}")
                                 st.info("Please save this code in a safe space to load your profile for future visits.")
                         else:
-                            st.error("Profile not found. Please check your security questions and answers.")
+                            st.error(message)
                 if st.button("Back to Load Profile", key="back_to_load"):
                     st.session_state.recovery_mode = False
                     st.rerun()
@@ -141,13 +150,13 @@ def main():
                 st.write("")
                 if st.button("Load Profile", key="load_profile"):
                     with st.spinner("Loading your profile..."):
-                        profile = load_profile_from_db(supabase, user_id_input)
+                        profile, message = load_profile_from_db(supabase, user_id_input)
                         if profile:
                             st.session_state.user_profile = profile
-                            st.success("Profile loaded successfully!")
+                            st.success(message)
                             st.rerun()
                         else:
-                            st.error("Profile not found. Please check the Unique ID or create a new profile.")
+                            st.error(message)
                 if st.button("Forgot your profile code?", key="forgot_code"):
                     st.session_state.recovery_mode = True
                     st.rerun()
@@ -181,7 +190,13 @@ def main():
         st.button("Clear Form", on_click=clear_form, use_container_width=True, key="clear_form")
 
     if submitted:
+        start_time = time.time()
         st.session_state.errors = {}
+
+        # Log form submission attempt
+        user_id = st.session_state.user_profile.get('user_id', 'new_user')
+        log_user_action("form_submission_start", user_id, {"form_type": user_status})
+
         try:
             if user_status == "No, I have not filled out the intake form before":
                 with stylable_container(key="create_profile_container", css_styles='''
@@ -226,11 +241,24 @@ def main():
                         }
                         
                         user_profile = UserProfile(**user_data)
-                        save_profile(supabase, user_profile.model_dump())
+                        success, message = save_profile(supabase, user_profile.model_dump())
 
-                        st.header(f"**Your Profile Code is: {user_id_formatted}**")
-                        st.info("Please save this code in a safe space to load your profile for future visits.")
-                        st.session_state.errors = {}
+                        if success:
+                            st.header(f"**Your Profile Code is: {user_id_formatted}**")
+                            st.info("Please save this code in a safe space to load your profile for future visits.")
+                            st.success(message)
+                            st.session_state.errors = {}
+
+                            # Log successful profile creation
+                            log_user_action("profile_created", user_id_formatted)
+                            track_form_performance(start_time, "profile_creation", True)
+                        else:
+                            st.error(message)
+
+                            # Log failed profile creation
+                            log_user_action("profile_creation_failed", user_id_formatted, {"error": message})
+                            track_form_performance(start_time, "profile_creation", False)
+                            return  # Don't continue if save failed
             else:
                 # This is an update
                 if not st.session_state.user_profile.get("user_id"):
@@ -273,7 +301,8 @@ def main():
                         "security_answer_3": st.session_state.user_profile["security_answer_3"],
                     }
                     user_profile = UserProfile(**user_data)
-                    save_profile(supabase, user_profile.model_dump())
+                    success, message = save_profile(supabase, user_profile.model_dump())
+
                     with stylable_container(key="success_container", css_styles='''
                     {
                         background-color: #FFFFFF;
@@ -281,10 +310,22 @@ def main():
                         padding: 1rem;
                     }
                     '''):
-                        display_message("success", "Profile updated successfully!")
+                        if success:
+                            display_message("success", message)
+                            log_user_action("profile_updated", st.session_state.user_profile["user_id"])
+                            track_form_performance(start_time, "profile_update", True)
+                        else:
+                            display_message("error", message)
+                            log_user_action("profile_update_failed", st.session_state.user_profile["user_id"], {"error": message})
+                            track_form_performance(start_time, "profile_update", False)
 
         except ValidationError as e:
             st.session_state.errors = {err['loc'][0] if err['loc'] else 'general': err['msg'] for err in e.errors()}
+
+            # Log validation errors
+            log_user_action("validation_error", user_id, {"errors": st.session_state.errors})
+            track_form_performance(start_time, "form_validation", False)
+
             with stylable_container(key="validation_error_container", css_styles='''
             {
                 background-color: #FFFFFF;
@@ -294,6 +335,15 @@ def main():
             '''):
                 for field, message in st.session_state.errors.items():
                     display_message("error", f"{field.replace('_', ' ').title()}: {message}")
+
+        except Exception as e:
+            # Log unexpected errors
+            log_error_with_context(e, {"action": "form_submission", "user_id": user_id})
+            track_form_performance(start_time, "form_submission", False)
+            st.error("An unexpected error occurred. Please try again or contact support if the problem persists.")
+
+    # --- Admin Dashboard (if enabled) ---
+    display_admin_dashboard()
 
 if __name__ == "__main__":
     main()

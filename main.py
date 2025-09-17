@@ -336,11 +336,21 @@ def main():
                 for field, message in st.session_state.errors.items():
                     display_message("error", f"{field.replace('_', ' ').title()}: {message}")
 
+            st.rerun()  # Rerun to show validation errors immediately
+
         except Exception as e:
             # Log unexpected errors
             log_error_with_context(e, {"action": "form_submission", "user_id": user_id})
             track_form_performance(start_time, "form_submission", False)
-            st.error("An unexpected error occurred. Please try again or contact support if the problem persists.")
+
+            with stylable_container(key="unexpected_error_container", css_styles='''
+            {
+                background-color: #FFFFFF;
+                border-radius: 0.5rem;
+                padding: 1rem;
+            }
+            '''):
+                display_message("error", "An unexpected error occurred. Please try again or contact support if the problem persists.")
 
     # --- Admin Dashboard (if enabled) ---
     display_admin_dashboard()

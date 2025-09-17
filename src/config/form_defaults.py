@@ -12,7 +12,7 @@ FORM_FIELDS = {
     "stress_level": "Moderate",
     "pregnant_or_breastfeeding": "No",
     "medical_conditions": "",
-    "medications": "",
+    "current_medications": "",
     "natural_supplements": "",
     "allergies": "",
     "health_goals": [],

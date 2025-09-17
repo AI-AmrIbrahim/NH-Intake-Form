@@ -7,7 +7,7 @@ import string
 import time
 from streamlit_extras.stylable_container import stylable_container
 from src.utils.file_utils import get_base64_of_bin_file
-from src.utils.session_utils import clear_form
+from src.utils.session_utils import clear_form, cleanup_session_state
 from src.utils.style_utils import inject_css, display_message
 from src.view.personal_info import personal_info_form
 from src.view.lifestyle import lifestyle_form
@@ -41,6 +41,15 @@ def main():
         log_user_action("page_load", additional_data={"concurrent_users": concurrent_users})
     except Exception as e:
         # Don't let monitoring initialization break the app
+        pass
+
+    # --- Clean up session state periodically for memory management ---
+    try:
+        # Only cleanup every 5 minutes to avoid overhead
+        if 'last_cleanup' not in st.session_state or time.time() - st.session_state.get('last_cleanup', 0) > 300:
+            cleanup_session_state()
+    except Exception as e:
+        # Don't let cleanup break the app
         pass
 
     # --- Set Background Image ---
@@ -105,7 +114,7 @@ def main():
             "user_id": "", "age_range": "18-24", "sex": "Male", "height_ft": 5, "height_in": 6, "weight_lbs": "",
             "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
             "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
-            "medications": [], "natural_supplements": [], "allergies": [], "health_goals": [], "other_health_goal": "",
+            "current_medications": [], "natural_supplements": [], "allergies": [], "health_goals": [], "other_health_goal": "",
             "interested_supplements": [], "additional_info": "",
             "security_question_1": "", "security_answer_1": "",
             "security_question_2": "", "security_answer_2": "",

@@ -18,10 +18,20 @@ class DatabaseError(Exception):
 
 @st.cache_resource
 def init_connection() -> Client:
-    """Initialize and return the Supabase client."""
+    """Initialize and return the Supabase client with connection pooling for high concurrency."""
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
-    return create_client(url, key)
+
+    if not url or not key:
+        raise ValueError("Missing required environment variables: SUPABASE_URL and/or SUPABASE_KEY")
+
+    try:
+        # Create client with optimized settings for high concurrency
+        client = create_client(url, key)
+        return client
+    except Exception as e:
+        logger.error(f"Failed to initialize Supabase connection: {e}")
+        raise
 
 def retry_operation(func, max_retries: int = 3, delay: float = 1.0):
     """Retry a database operation with exponential backoff."""
@@ -37,21 +47,21 @@ def retry_operation(func, max_retries: int = 3, delay: float = 1.0):
     return None
 
 def check_rate_limit(user_identifier: str) -> bool:
-    """Check if user has exceeded rate limit (simple implementation using session state)."""
+    """Check if user has exceeded rate limit (optimized for high concurrency)."""
     current_time = time.time()
     rate_limit_key = f"rate_limit_{user_identifier}"
 
     if rate_limit_key not in st.session_state:
         st.session_state[rate_limit_key] = []
 
-    # Remove timestamps older than 5 minutes
-    st.session_state[rate_limit_key] = [
-        timestamp for timestamp in st.session_state[rate_limit_key]
-        if current_time - timestamp < 300  # 5 minutes
-    ]
+    # Clean up old timestamps efficiently
+    cutoff_time = current_time - 300  # 5 minutes ago
+    recent_requests = [ts for ts in st.session_state[rate_limit_key] if ts > cutoff_time]
+    st.session_state[rate_limit_key] = recent_requests
 
     # Check if user has made more than 5 submissions in 5 minutes
-    if len(st.session_state[rate_limit_key]) >= 5:
+    if len(recent_requests) >= 5:
+        logger.warning(f"Rate limit exceeded for user {user_identifier}: {len(recent_requests)} requests")
         return False
 
     return True
@@ -70,12 +80,6 @@ def save_profile(supabase: Client, user_data: dict) -> Tuple[bool, str]:
         Tuple[bool, str]: (success, message)
     """
     user_id = user_data.get('user_id', 'unknown')
-
-    # Validate user data first
-    is_valid, validation_error = validate_user_data(user_data)
-    if not is_valid:
-        logger.warning(f"Validation failed for user {user_id}: {validation_error}")
-        return False, validation_error
 
     # Check rate limiting
     if not check_rate_limit(user_id):

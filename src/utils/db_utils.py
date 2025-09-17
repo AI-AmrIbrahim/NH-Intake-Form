@@ -9,6 +9,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Configure logger
+logger = logging.getLogger(__name__)
+
+class DatabaseError(Exception):
+    """Custom exception for database-related errors."""
+    pass
+
 @st.cache_resource
 def init_connection() -> Client:
     """Initialize and return the Supabase client."""

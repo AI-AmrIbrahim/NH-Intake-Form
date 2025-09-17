@@ -73,45 +73,14 @@ def add_rate_limit_entry(user_identifier: str):
         st.session_state[rate_limit_key] = []
     st.session_state[rate_limit_key].append(time.time())
 
-def save_profile(supabase: Client, user_data: dict) -> Tuple[bool, str]:
-    """Save user profile to the database with comprehensive error handling.
-
-    Returns:
-        Tuple[bool, str]: (success, message)
-    """
-    user_id = user_data.get('user_id', 'unknown')
-
-    # Check rate limiting
-    if not check_rate_limit(user_id):
-        logger.warning(f"Rate limit exceeded for user {user_id}")
-        return False, "Too many submissions. Please wait a few minutes before trying again."
-
-    def _save_operation():
-        response = supabase.table('user_profiles').insert(user_data).execute()
-        if hasattr(response, 'data') and response.data:
-            logger.info(f"Profile saved successfully for user {user_id}")
-            return response
-        else:
-            raise DatabaseError("No data returned from database")
-
+def save_profile(supabase: Client, user_data: dict):
+    """Save user profile to the database - simple approach like main branch."""
     try:
-        response = retry_operation(_save_operation)
-        add_rate_limit_entry(user_id)
-        return True, "Profile saved successfully!"
-
+        response = supabase.table('user_profiles').insert(user_data).execute()
+        return response
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Failed to save profile for user {user_id}: {error_msg}")
-
-        # Provide user-friendly error messages
-        if "timeout" in error_msg.lower():
-            return False, "Request timed out. Please check your internet connection and try again."
-        elif "connection" in error_msg.lower():
-            return False, "Unable to connect to database. Please try again in a few moments."
-        elif "duplicate" in error_msg.lower() or "unique" in error_msg.lower():
-            return False, "A profile with this ID already exists. Please use the update option instead."
-        else:
-            return False, "An unexpected error occurred while saving your profile. Please try again or contact support if the problem persists."
+        print(f"Error saving profile: {e}")
+        return None
 
 def load_profile_from_db(supabase: Client, user_id: str) -> Tuple[Optional[Dict[str, Any]], str]:
     """Load the most recent user profile from the database based on user_id.

@@ -4,10 +4,9 @@ import json
 import uuid
 import random
 import string
-import time
 from streamlit_extras.stylable_container import stylable_container
 from src.utils.file_utils import get_base64_of_bin_file
-from src.utils.session_utils import clear_form, cleanup_session_state
+from src.utils.session_utils import clear_form
 from src.utils.style_utils import inject_css, display_message
 from src.view.personal_info import personal_info_form
 from src.view.lifestyle import lifestyle_form
@@ -17,7 +16,6 @@ from src.view.health_goals import health_goals_form
 from src.view.additional_info import additional_info_form
 from src.view.security_questions import security_questions_form
 from src.utils.db_utils import init_connection, save_profile, load_profile_from_db, load_profile_by_security_questions
-from src.utils.monitoring import log_user_action, track_form_performance, display_admin_dashboard, monitor_concurrent_users, log_error_with_context
 from src.models.user_profile import UserProfile
 from pydantic import ValidationError
 
@@ -35,22 +33,6 @@ def main():
         layout="centered"
     )
 
-    # --- Initialize monitoring ---
-    try:
-        concurrent_users = monitor_concurrent_users()
-        log_user_action("page_load", additional_data={"concurrent_users": concurrent_users})
-    except Exception as e:
-        # Don't let monitoring initialization break the app
-        pass
-
-    # --- Clean up session state periodically for memory management ---
-    try:
-        # Only cleanup every 5 minutes to avoid overhead
-        if 'last_cleanup' not in st.session_state or time.time() - st.session_state.get('last_cleanup', 0) > 300:
-            cleanup_session_state()
-    except Exception as e:
-        # Don't let cleanup break the app
-        pass
 
     # --- Set Background Image ---
     background_image_b64 = get_base64_of_bin_file('assets/background.png')
@@ -200,12 +182,7 @@ def main():
         st.button("Clear Form", on_click=clear_form, use_container_width=True, key="clear_form")
 
     if submitted:
-        start_time = time.time()
         st.session_state.errors = {}
-
-        # Log form submission attempt
-        user_id = st.session_state.user_profile.get('user_id', 'new_user')
-        log_user_action("form_submission_start", user_id, {"form_type": user_status})
 
         try:
             if user_status == "No, I have not filled out the intake form before":
@@ -243,50 +220,20 @@ def main():
                     "security_answer_3": security_questions["security_answer_3"]
                 }
 
-                # Save profile with spinner
-                with st.spinner("Creating Your Profile, please wait to get your profile code..."):
-                    user_profile = UserProfile(**user_data)
-                    success, message = save_profile(supabase, user_profile.model_dump())
+                with stylable_container(key="create_profile_container", css_styles='''
+                {
+                    background-color: #FFFFFF;
+                    border-radius: 0.5rem;
+                    padding: 1rem;
+                }
+                '''):
+                    with st.spinner("Creating Your Profile, please wait to get your profile code..."):
+                        user_profile = UserProfile(**user_data)
+                        save_profile(supabase, user_profile.model_dump())
 
-                # Display results outside spinner
-                if success:
-                    with stylable_container(key="create_profile_success_container", css_styles='''
-                    {
-                        background-color: #FFFFFF;
-                        border-radius: 0.5rem;
-                        padding: 1rem;
-                    }
-                    '''):
                         st.header(f"**Your Profile Code is: {user_id_formatted}**")
                         st.info("Please save this code in a safe space to load your profile for future visits.")
-                        st.success(message)
                         st.session_state.errors = {}
-
-                        # Log successful profile creation (wrapped to prevent errors)
-                        try:
-                            log_user_action("profile_created", user_id_formatted)
-                            track_form_performance(start_time, "profile_creation", True)
-                        except Exception as log_error:
-                            # Don't let monitoring errors break the user experience
-                            pass
-                else:
-                    with stylable_container(key="create_profile_error_container", css_styles='''
-                    {
-                        background-color: #FFFFFF;
-                        border-radius: 0.5rem;
-                        padding: 1rem;
-                    }
-                    '''):
-                        st.error(message)
-
-                        # Log failed profile creation (wrapped to prevent errors)
-                        try:
-                            log_user_action("profile_creation_failed", user_id_formatted, {"error": message})
-                            track_form_performance(start_time, "profile_creation", False)
-                        except Exception as log_error:
-                            # Don't let monitoring errors break the user experience
-                            pass
-                        return  # Don't continue if save failed
             else:
                 # This is an update
                 if not st.session_state.user_profile.get("user_id"):
@@ -329,8 +276,7 @@ def main():
                         "security_answer_3": st.session_state.user_profile["security_answer_3"],
                     }
                     user_profile = UserProfile(**user_data)
-                    success, message = save_profile(supabase, user_profile.model_dump())
-
+                    save_profile(supabase, user_profile.model_dump())
                     with stylable_container(key="success_container", css_styles='''
                     {
                         background-color: #FFFFFF;
@@ -338,36 +284,10 @@ def main():
                         padding: 1rem;
                     }
                     '''):
-                        if success:
-                            display_message("success", message)
-                            # Log profile update (wrapped to prevent errors)
-                            try:
-                                log_user_action("profile_updated", st.session_state.user_profile["user_id"])
-                                track_form_performance(start_time, "profile_update", True)
-                            except Exception as log_error:
-                                # Don't let monitoring errors break the user experience
-                                pass
-                        else:
-                            display_message("error", message)
-                            # Log failed profile update (wrapped to prevent errors)
-                            try:
-                                log_user_action("profile_update_failed", st.session_state.user_profile["user_id"], {"error": message})
-                                track_form_performance(start_time, "profile_update", False)
-                            except Exception as log_error:
-                                # Don't let monitoring errors break the user experience
-                                pass
+                        display_message("success", "Profile updated successfully!")
 
         except ValidationError as e:
             st.session_state.errors = {err['loc'][0] if err['loc'] else 'general': err['msg'] for err in e.errors()}
-
-            # Log validation errors (wrapped to prevent errors)
-            try:
-                log_user_action("validation_error", user_id, {"errors": st.session_state.errors})
-                track_form_performance(start_time, "form_validation", False)
-            except Exception as log_error:
-                # Don't let monitoring errors break the user experience
-                pass
-
             with stylable_container(key="validation_error_container", css_styles='''
             {
                 background-color: #FFFFFF;
@@ -378,30 +298,6 @@ def main():
                 for field, message in st.session_state.errors.items():
                     display_message("error", f"{field.replace('_', ' ').title()}: {message}")
 
-        except Exception as e:
-            # Log unexpected errors (wrapped to prevent additional errors)
-            try:
-                log_error_with_context(e, {"action": "form_submission", "user_id": user_id})
-                track_form_performance(start_time, "form_submission", False)
-            except Exception as log_error:
-                # Don't let logging errors cause additional issues
-                pass
-
-            with stylable_container(key="unexpected_error_container", css_styles='''
-            {
-                background-color: #FFFFFF;
-                border-radius: 0.5rem;
-                padding: 1rem;
-            }
-            '''):
-                display_message("error", "An unexpected error occurred. Please try again or contact support if the problem persists.")
-
-    # --- Admin Dashboard (if enabled) ---
-    try:
-        display_admin_dashboard()
-    except Exception as admin_error:
-        # Don't let admin dashboard errors break the main application
-        pass
 
 if __name__ == "__main__":
     main()

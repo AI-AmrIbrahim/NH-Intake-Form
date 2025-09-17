@@ -40,7 +40,8 @@ def main():
         concurrent_users = monitor_concurrent_users()
         log_user_action("page_load", additional_data={"concurrent_users": concurrent_users})
     except Exception as e:
-        log_error_with_context(e, {"action": "monitoring_init"})
+        # Don't let monitoring initialization break the app
+        pass
 
     # --- Set Background Image ---
     background_image_b64 = get_base64_of_bin_file('assets/background.png')
@@ -249,15 +250,23 @@ def main():
                             st.success(message)
                             st.session_state.errors = {}
 
-                            # Log successful profile creation
-                            log_user_action("profile_created", user_id_formatted)
-                            track_form_performance(start_time, "profile_creation", True)
+                            # Log successful profile creation (wrapped to prevent errors)
+                            try:
+                                log_user_action("profile_created", user_id_formatted)
+                                track_form_performance(start_time, "profile_creation", True)
+                            except Exception as log_error:
+                                # Don't let monitoring errors break the user experience
+                                pass
                         else:
                             st.error(message)
 
-                            # Log failed profile creation
-                            log_user_action("profile_creation_failed", user_id_formatted, {"error": message})
-                            track_form_performance(start_time, "profile_creation", False)
+                            # Log failed profile creation (wrapped to prevent errors)
+                            try:
+                                log_user_action("profile_creation_failed", user_id_formatted, {"error": message})
+                                track_form_performance(start_time, "profile_creation", False)
+                            except Exception as log_error:
+                                # Don't let monitoring errors break the user experience
+                                pass
                             return  # Don't continue if save failed
             else:
                 # This is an update
@@ -312,19 +321,33 @@ def main():
                     '''):
                         if success:
                             display_message("success", message)
-                            log_user_action("profile_updated", st.session_state.user_profile["user_id"])
-                            track_form_performance(start_time, "profile_update", True)
+                            # Log profile update (wrapped to prevent errors)
+                            try:
+                                log_user_action("profile_updated", st.session_state.user_profile["user_id"])
+                                track_form_performance(start_time, "profile_update", True)
+                            except Exception as log_error:
+                                # Don't let monitoring errors break the user experience
+                                pass
                         else:
                             display_message("error", message)
-                            log_user_action("profile_update_failed", st.session_state.user_profile["user_id"], {"error": message})
-                            track_form_performance(start_time, "profile_update", False)
+                            # Log failed profile update (wrapped to prevent errors)
+                            try:
+                                log_user_action("profile_update_failed", st.session_state.user_profile["user_id"], {"error": message})
+                                track_form_performance(start_time, "profile_update", False)
+                            except Exception as log_error:
+                                # Don't let monitoring errors break the user experience
+                                pass
 
         except ValidationError as e:
             st.session_state.errors = {err['loc'][0] if err['loc'] else 'general': err['msg'] for err in e.errors()}
 
-            # Log validation errors
-            log_user_action("validation_error", user_id, {"errors": st.session_state.errors})
-            track_form_performance(start_time, "form_validation", False)
+            # Log validation errors (wrapped to prevent errors)
+            try:
+                log_user_action("validation_error", user_id, {"errors": st.session_state.errors})
+                track_form_performance(start_time, "form_validation", False)
+            except Exception as log_error:
+                # Don't let monitoring errors break the user experience
+                pass
 
             with stylable_container(key="validation_error_container", css_styles='''
             {
@@ -336,12 +359,14 @@ def main():
                 for field, message in st.session_state.errors.items():
                     display_message("error", f"{field.replace('_', ' ').title()}: {message}")
 
-            st.rerun()  # Rerun to show validation errors immediately
-
         except Exception as e:
-            # Log unexpected errors
-            log_error_with_context(e, {"action": "form_submission", "user_id": user_id})
-            track_form_performance(start_time, "form_submission", False)
+            # Log unexpected errors (wrapped to prevent additional errors)
+            try:
+                log_error_with_context(e, {"action": "form_submission", "user_id": user_id})
+                track_form_performance(start_time, "form_submission", False)
+            except Exception as log_error:
+                # Don't let logging errors cause additional issues
+                pass
 
             with stylable_container(key="unexpected_error_container", css_styles='''
             {
@@ -353,7 +378,11 @@ def main():
                 display_message("error", "An unexpected error occurred. Please try again or contact support if the problem persists.")
 
     # --- Admin Dashboard (if enabled) ---
-    display_admin_dashboard()
+    try:
+        display_admin_dashboard()
+    except Exception as admin_error:
+        # Don't let admin dashboard errors break the main application
+        pass
 
 if __name__ == "__main__":
     main()

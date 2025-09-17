@@ -126,7 +126,12 @@ def get_rate_limit_status(user_identifier: str) -> Dict[str, Any]:
 
 def display_admin_dashboard():
     """Display an admin dashboard with system health and monitoring info."""
-    if not st.secrets.get("ADMIN_MODE", False):
+    try:
+        admin_mode = st.secrets.get("ADMIN_MODE", False) if hasattr(st, 'secrets') else False
+        if not admin_mode:
+            return
+    except Exception:
+        # If secrets aren't available or configured, just return
         return
 
     with st.expander("🔧 Admin Dashboard", expanded=False):

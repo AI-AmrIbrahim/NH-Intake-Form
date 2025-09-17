@@ -1,80 +1,20 @@
 import os
 import streamlit as st
 import json
-import time
-import logging
-from typing import Optional, Tuple, Dict, Any
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configure logger
-logger = logging.getLogger(__name__)
-
-class DatabaseError(Exception):
-    """Custom exception for database-related errors."""
-    pass
-
 @st.cache_resource
 def init_connection() -> Client:
-    """Initialize and return the Supabase client with connection pooling for high concurrency."""
+    """Initialize and return the Supabase client."""
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
-
-    if not url or not key:
-        raise ValueError("Missing required environment variables: SUPABASE_URL and/or SUPABASE_KEY")
-
-    try:
-        # Create client with optimized settings for high concurrency
-        client = create_client(url, key)
-        return client
-    except Exception as e:
-        logger.error(f"Failed to initialize Supabase connection: {e}")
-        raise
-
-def retry_operation(func, max_retries: int = 3, delay: float = 1.0):
-    """Retry a database operation with exponential backoff."""
-    for attempt in range(max_retries):
-        try:
-            return func()
-        except Exception as e:
-            if attempt == max_retries - 1:
-                raise e
-            logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay} seconds...")
-            time.sleep(delay)
-            delay *= 2  # Exponential backoff
-    return None
-
-def check_rate_limit(user_identifier: str) -> bool:
-    """Check if user has exceeded rate limit (optimized for high concurrency)."""
-    current_time = time.time()
-    rate_limit_key = f"rate_limit_{user_identifier}"
-
-    if rate_limit_key not in st.session_state:
-        st.session_state[rate_limit_key] = []
-
-    # Clean up old timestamps efficiently
-    cutoff_time = current_time - 300  # 5 minutes ago
-    recent_requests = [ts for ts in st.session_state[rate_limit_key] if ts > cutoff_time]
-    st.session_state[rate_limit_key] = recent_requests
-
-    # Check if user has made more than 5 submissions in 5 minutes
-    if len(recent_requests) >= 5:
-        logger.warning(f"Rate limit exceeded for user {user_identifier}: {len(recent_requests)} requests")
-        return False
-
-    return True
-
-def add_rate_limit_entry(user_identifier: str):
-    """Add a rate limit entry for the user."""
-    rate_limit_key = f"rate_limit_{user_identifier}"
-    if rate_limit_key not in st.session_state:
-        st.session_state[rate_limit_key] = []
-    st.session_state[rate_limit_key].append(time.time())
+    return create_client(url, key)
 
 def save_profile(supabase: Client, user_data: dict):
-    """Save user profile to the database - simple approach like main branch."""
+    """Save user profile to the database as a new entry."""
     try:
         response = supabase.table('user_profiles').insert(user_data).execute()
         return response
@@ -82,26 +22,13 @@ def save_profile(supabase: Client, user_data: dict):
         print(f"Error saving profile: {e}")
         return None
 
-def load_profile_from_db(supabase: Client, user_id: str) -> Tuple[Optional[Dict[str, Any]], str]:
-    """Load the most recent user profile from the database based on user_id.
-
-    Returns:
-        Tuple[Optional[Dict], str]: (profile_data, message)
-    """
-    if not user_id or not user_id.strip():
-        return None, "Please enter a valid profile ID."
-
-    def _load_operation():
-        response = supabase.table('user_profiles').select('*').eq('user_id', user_id.strip()).order('created_at', desc=True).limit(1).execute()
-        return response
-
+def load_profile_from_db(supabase: Client, user_id: str):
+    """Load the most recent user profile from the database based on user_id."""
     try:
-        response = retry_operation(_load_operation)
-
-        if response and response.data:
+        response = supabase.table('user_profiles').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(1).execute()
+        if response.data:
             profile = response.data[0]
 
-            # Process list fields
             list_fields = [
                 'medical_conditions', 'current_medications', 'natural_supplements',
                 'allergies', 'health_goals', 'interested_supplements'
@@ -114,10 +41,8 @@ def load_profile_from_db(supabase: Client, user_id: str) -> Tuple[Optional[Dict[
                             parsed_data = json.loads(profile[field])
                             profile[field] = parsed_data
                         except (json.JSONDecodeError, TypeError):
-                            logger.warning(f"Failed to parse JSON for field {field}")
-                            profile[field] = []
+                            pass
 
-            # Process text fields
             text_fields = ['additional_info', 'other_health_goal']
             for field in text_fields:
                 if field in profile and profile[field] is not None:
@@ -125,130 +50,26 @@ def load_profile_from_db(supabase: Client, user_id: str) -> Tuple[Optional[Dict[
                 elif field in profile:
                     profile[field] = ""
 
-            logger.info(f"Profile loaded successfully for user {user_id}")
-            return profile, "Profile loaded successfully!"
-        else:
-            logger.info(f"No profile found for user {user_id}")
-            return None, "Profile not found. Please check your Profile ID or create a new profile."
-
+            return profile
+        return None
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Failed to load profile for user {user_id}: {error_msg}")
+        print(f"Error loading profile: {e}")
+        return None
 
-        if "timeout" in error_msg.lower():
-            return None, "Request timed out. Please check your internet connection and try again."
-        elif "connection" in error_msg.lower():
-            return None, "Unable to connect to database. Please try again in a few moments."
-        else:
-            return None, "An error occurred while loading your profile. Please try again or contact support."
-
-def load_profile_by_security_questions(supabase: Client, security_questions: dict) -> Tuple[Optional[Dict[str, Any]], str]:
-    """Load a user profile from the database based on security questions and answers.
-
-    Returns:
-        Tuple[Optional[Dict], str]: (profile_data, message)
-    """
-    # Validate input
-    required_fields = [
-        'security_question_1', 'security_answer_1',
-        'security_question_2', 'security_answer_2',
-        'security_question_3', 'security_answer_3'
-    ]
-
-    for field in required_fields:
-        if not security_questions.get(field, '').strip():
-            return None, f"Please fill in all security questions and answers."
-
-    # Check rate limiting for security question attempts
-    if not check_rate_limit("security_recovery"):
-        return None, "Too many recovery attempts. Please wait a few minutes before trying again."
-
-    def _load_operation():
+def load_profile_by_security_questions(supabase: Client, security_questions: dict):
+    """Load a user profile from the database based on security questions and answers."""
+    try:
         response = supabase.table('user_profiles').select('*')\
             .eq('security_question_1', security_questions['security_question_1'])\
-            .eq('security_answer_1', security_questions['security_answer_1'].strip())\
+            .eq('security_answer_1', security_questions['security_answer_1'])\
             .eq('security_question_2', security_questions['security_question_2'])\
-            .eq('security_answer_2', security_questions['security_answer_2'].strip())\
+            .eq('security_answer_2', security_questions['security_answer_2'])\
             .eq('security_question_3', security_questions['security_question_3'])\
-            .eq('security_answer_3', security_questions['security_answer_3'].strip())\
+            .eq('security_answer_3', security_questions['security_answer_3'])\
             .order('created_at', desc=True).limit(1).execute()
-        return response
-
-    try:
-        response = retry_operation(_load_operation)
-        add_rate_limit_entry("security_recovery")
-
-        if response and response.data:
-            logger.info("Profile recovered successfully via security questions")
-            return response.data[0], "Profile recovered successfully!"
-        else:
-            logger.info("No profile found matching security questions")
-            return None, "No profile found matching your security questions and answers. Please verify your answers are correct."
-
+        if response.data:
+            return response.data[0]
+        return None
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Failed to recover profile via security questions: {error_msg}")
-
-        if "timeout" in error_msg.lower():
-            return None, "Request timed out. Please check your internet connection and try again."
-        elif "connection" in error_msg.lower():
-            return None, "Unable to connect to database. Please try again in a few moments."
-        else:
-            return None, "An error occurred during profile recovery. Please try again or contact support."
-
-def validate_user_data(user_data: dict) -> Tuple[bool, str]:
-    """Validate user data before saving to database.
-
-    Returns:
-        Tuple[bool, str]: (is_valid, error_message)
-    """
-    required_fields = ['user_id', 'age_range', 'sex']
-
-    for field in required_fields:
-        if not user_data.get(field):
-            return False, f"Required field '{field.replace('_', ' ').title()}' is missing."
-
-    # Validate user_id format (should be XXX-XXX-XXX)
-    user_id = user_data.get('user_id', '')
-    if len(user_id) != 11 or user_id.count('-') != 2:
-        return False, "Invalid user ID format."
-
-    # Validate weight if provided
-    weight = user_data.get('weight_lbs')
-    if weight is not None:
-        try:
-            weight_float = float(weight)
-            if weight_float <= 0 or weight_float > 1000:
-                return False, "Weight must be between 1 and 1000 pounds."
-        except (ValueError, TypeError):
-            return False, "Invalid weight value."
-
-    return True, ""
-
-def get_database_health() -> Dict[str, Any]:
-    """Check database connection health.
-
-    Returns:
-        Dict with health status information
-    """
-    try:
-        supabase = init_connection()
-        start_time = time.time()
-
-        # Simple health check query
-        response = supabase.table('user_profiles').select('count', count='exact').limit(1).execute()
-
-        response_time = time.time() - start_time
-
-        return {
-            'status': 'healthy',
-            'response_time_ms': round(response_time * 1000, 2),
-            'timestamp': time.time()
-        }
-    except Exception as e:
-        logger.error(f"Database health check failed: {e}")
-        return {
-            'status': 'unhealthy',
-            'error': str(e),
-            'timestamp': time.time()
-        }
+        print(f"Error loading profile by security questions: {e}")
+        return None

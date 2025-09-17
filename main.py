@@ -33,7 +33,6 @@ def main():
         layout="centered"
     )
 
-
     # --- Set Background Image ---
     background_image_b64 = get_base64_of_bin_file('assets/background.png')
     if background_image_b64:
@@ -96,7 +95,7 @@ def main():
             "user_id": "", "age_range": "18-24", "sex": "Male", "height_ft": 5, "height_in": 6, "weight_lbs": "",
             "physical_activity": "3-4 days", "energy_level": "Neutral", "diet": "I don't follow a specific diet",
             "pregnant_or_breastfeeding": "Not Applicable", "medical_conditions": [],
-            "current_medications": [], "natural_supplements": [], "allergies": [], "health_goals": [], "other_health_goal": "",
+            "medications": [], "natural_supplements": [], "allergies": [], "health_goals": [], "other_health_goal": "",
             "interested_supplements": [], "additional_info": "",
             "security_question_1": "", "security_answer_1": "",
             "security_question_2": "", "security_answer_2": "",
@@ -120,7 +119,7 @@ def main():
                 security_questions_recovery = security_questions_form(st.session_state.user_profile, st.session_state.errors)
                 if st.button("Recover My Code", key="recover_code"):
                     with st.spinner("Recovering your profile code..."):
-                        profile, message = load_profile_by_security_questions(supabase, security_questions_recovery)
+                        profile = load_profile_by_security_questions(supabase, security_questions_recovery)
                         if profile:
                             with stylable_container(key="profile_code_container", css_styles='''
                             {
@@ -133,7 +132,7 @@ def main():
                                 st.success(f"Your Profile Code is: {profile['user_id']}")
                                 st.info("Please save this code in a safe space to load your profile for future visits.")
                         else:
-                            st.error(message)
+                            st.error("Profile not found. Please check your security questions and answers.")
                 if st.button("Back to Load Profile", key="back_to_load"):
                     st.session_state.recovery_mode = False
                     st.rerun()
@@ -142,13 +141,13 @@ def main():
                 st.write("")
                 if st.button("Load Profile", key="load_profile"):
                     with st.spinner("Loading your profile..."):
-                        profile, message = load_profile_from_db(supabase, user_id_input)
+                        profile = load_profile_from_db(supabase, user_id_input)
                         if profile:
                             st.session_state.user_profile = profile
-                            st.success(message)
+                            st.success("Profile loaded successfully!")
                             st.rerun()
                         else:
-                            st.error(message)
+                            st.error("Profile not found. Please check the Unique ID or create a new profile.")
                 if st.button("Forgot your profile code?", key="forgot_code"):
                     st.session_state.recovery_mode = True
                     st.rerun()
@@ -183,43 +182,8 @@ def main():
 
     if submitted:
         st.session_state.errors = {}
-
         try:
             if user_status == "No, I have not filled out the intake form before":
-                # Generate user ID and prepare data
-                chat_set = string.ascii_letters + string.digits
-                user_id_raw = ''.join(random.choices(chat_set, k=9))
-                user_id_formatted = f"{user_id_raw[:3]}-{user_id_raw[3:6]}-{user_id_raw[6:]}"
-                user_data = {
-                    "user_id": user_id_formatted,
-                    "age_range": personal_info["age_range"],
-                    "sex": personal_info["sex"],
-                    "height_ft": personal_info["height_ft"],
-                    "height_in": personal_info["height_in"],
-                    "weight_lbs": personal_info["weight_lbs"],
-                    "physical_activity": lifestyle["physical_activity"],
-                    "energy_level": lifestyle["energy_level"],
-                    "diet": lifestyle["diet"],
-                    "meals_per_day": lifestyle["meals_per_day"],
-                    "sleep_quality": lifestyle["sleep_quality"],
-                    "stress_level": lifestyle["stress_level"],
-                    "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
-                    "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
-                    "current_medications": [s.strip() for s in medications_allergies["current_medications"].split(',') if s.strip()],
-                    "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
-                    "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
-                    "health_goals": health_goals["health_goals"],
-                    "other_health_goal": health_goals["other_health_goal"],
-                    "interested_supplements": [s.strip() for s in health_goals["interested_supplements"].split(',') if s.strip()],
-                    "additional_info": additional_info["additional_info"],
-                    "security_question_1": security_questions["security_question_1"],
-                    "security_answer_1": security_questions["security_answer_1"],
-                    "security_question_2": security_questions["security_question_2"],
-                    "security_answer_2": security_questions["security_answer_2"],
-                    "security_question_3": security_questions["security_question_3"],
-                    "security_answer_3": security_questions["security_answer_3"]
-                }
-
                 with stylable_container(key="create_profile_container", css_styles='''
                 {
                     background-color: #FFFFFF;
@@ -228,6 +192,39 @@ def main():
                 }
                 '''):
                     with st.spinner("Creating Your Profile, please wait to get your profile code..."):
+                        chat_set = string.ascii_letters + string.digits
+                        user_id_raw = ''.join(random.choices(chat_set, k=9))
+                        user_id_formatted = f"{user_id_raw[:3]}-{user_id_raw[3:6]}-{user_id_raw[6:]}"
+                        user_data = {
+                            "user_id": user_id_formatted,
+                            "age_range": personal_info["age_range"],
+                            "sex": personal_info["sex"],
+                            "height_ft": personal_info["height_ft"],
+                            "height_in": personal_info["height_in"],
+                            "weight_lbs": personal_info["weight_lbs"],
+                            "physical_activity": lifestyle["physical_activity"],
+                            "energy_level": lifestyle["energy_level"],
+                            "diet": lifestyle["diet"],
+                            "meals_per_day": lifestyle["meals_per_day"],
+                            "sleep_quality": lifestyle["sleep_quality"],
+                            "stress_level": lifestyle["stress_level"],
+                            "pregnant_or_breastfeeding": medical_history["pregnant_or_breastfeeding"],
+                            "medical_conditions": [s.strip() for s in medical_history["medical_conditions"].split(',') if s.strip()],
+                            "current_medications": [s.strip() for s in medications_allergies["current_medications"].split(',') if s.strip()],
+                            "natural_supplements": [s.strip() for s in medications_allergies["natural_supplements"].split(',') if s.strip()],
+                            "allergies": [s.strip() for s in medications_allergies["allergies"].split(',') if s.strip()],
+                            "health_goals": health_goals["health_goals"],
+                            "other_health_goal": health_goals["other_health_goal"],
+                            "interested_supplements": [s.strip() for s in health_goals["interested_supplements"].split(',') if s.strip()],
+                            "additional_info": additional_info["additional_info"],
+                            "security_question_1": security_questions["security_question_1"],
+                            "security_answer_1": security_questions["security_answer_1"],
+                            "security_question_2": security_questions["security_question_2"],
+                            "security_answer_2": security_questions["security_answer_2"],
+                            "security_question_3": security_questions["security_question_3"],
+                            "security_answer_3": security_questions["security_answer_3"]
+                        }
+
                         user_profile = UserProfile(**user_data)
                         save_profile(supabase, user_profile.model_dump())
 
@@ -297,7 +294,6 @@ def main():
             '''):
                 for field, message in st.session_state.errors.items():
                     display_message("error", f"{field.replace('_', ' ').title()}: {message}")
-
 
 if __name__ == "__main__":
     main()
